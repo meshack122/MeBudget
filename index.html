@@ -154,7 +154,22 @@ body { font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; backgrou
 .loading-msg { text-align:center; color:var(--muted); padding:26px; font-size:.88rem; }
 .total-row { padding:11px 0 3px; font-size:.84rem; font-weight:700; color:var(--muted); text-align:right; border-top:1px solid var(--border); margin-top:4px; }
 
-/* ── Notifications banner ─── */
+/* ── Privacy / Income hiding ─────────────────────────── */
+.inc-amt {
+  font-size:.92rem; font-weight:700; color:var(--income);
+  filter:blur(5px); transition:filter .3s; user-select:none; cursor:pointer;
+}
+.inc-amt.revealed { filter:blur(0); }
+.inc-amt-wrap { display:flex; align-items:center; gap:6px; }
+.reveal-hint  { font-size:.62rem; color:var(--muted); }
+
+@keyframes flashReveal {
+  0%   { opacity:0; transform:translateY(-4px); }
+  15%  { opacity:1; transform:translateY(0); }
+  80%  { opacity:1; }
+  100% { opacity:0; }
+}
+#incomeReveal.showing { animation:flashReveal 4.5s ease forwards; }
 .notif-banner { background:linear-gradient(135deg,#f59e0b,#d97706); color:#fff; border-radius:12px; padding:12px 15px; margin-bottom:14px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
 .notif-banner p { font-size:.84rem; font-weight:600; line-height:1.4; }
 .notif-en-btn { background:#fff; color:#d97706; border:none; border-radius:8px; padding:7px 13px; font-size:.78rem; font-weight:700; cursor:pointer; white-space:nowrap; font-family:inherit; }
@@ -228,11 +243,11 @@ body { font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; backgrou
       <input type="url" class="form-input" id="apiUrlInput" placeholder="https://script.google.com/macros/s/.../exec">
     </div>
 
-    <p class="form-label" style="margin-top:6px">Gemini AI</p>
-    <div class="step"><b>1.</b> Go to <b>aistudio.google.com</b> → Get API key → Create API key. Free tier is plenty.</div>
+    <p class="form-label" style="margin-top:6px">Groq AI <span style="font-weight:400;color:var(--income);font-size:.72rem">✓ Free worldwide · No billing needed</span></p>
+    <div class="step"><b>1.</b> Go to <b>console.groq.com</b> → Sign up (free) → click <b>API Keys</b> → <b>Create API Key</b>. Copy the key — it starts with <code>gsk_…</code></div>
     <div class="form-group" style="margin-top:8px">
-      <label class="form-label">Gemini API Key</label>
-      <input type="password" class="form-input" id="geminiKeyInput" placeholder="AIza…">
+      <label class="form-label">Groq API Key</label>
+      <input type="password" class="form-input" id="geminiKeyInput" placeholder="gsk_…">
     </div>
 
     <p class="form-label" style="margin-top:6px">Notification Times</p>
@@ -353,8 +368,12 @@ body { font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; backgrou
   </div>
   <div class="balance-block">
     <div class="balance-label">Remaining Balance</div>
-    <div class="balance-val" id="hdrBalance">—</div>
+    <div class="balance-val" id="hdrBalance" onclick="balanceTap()">—</div>
     <div class="balance-sub" id="hdrSub">Connecting…</div>
+    <!-- Hidden income reveal strip -->
+    <div id="incomeReveal" style="display:none;margin-top:8px;background:rgba(255,255,255,.15);border-radius:10px;padding:7px 14px;font-size:.82rem;font-weight:700;letter-spacing:.04em;transition:opacity .4s">
+      💵 Income: <span id="revealAmt">—</span>
+    </div>
   </div>
 </div>
 
@@ -367,11 +386,17 @@ body { font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; backgrou
     <p>📔 Enable daily reminders to log your expenses on time!</p>
     <button class="notif-en-btn" onclick="requestNotifPermission()">Enable</button>
   </div>
+
+  <!-- Privacy hint -->
+  <div style="text-align:center;font-size:.7rem;color:var(--muted);margin-bottom:10px;margin-top:-4px">
+    🔒 Income hidden · tap balance 3× to reveal
+  </div>
+
   <div class="summary-grid">
-    <div class="sum-card"><div class="sum-label">💵 Income</div><div class="sum-val green" id="sIncome">—</div><div class="sum-note" id="sIncomeSub">—</div></div>
+    <div class="sum-card"><div class="sum-label">📊 Budget Used</div><div class="sum-val purple" id="sBudgetUsed">—</div><div class="sum-note" id="sBudgetUsedSub">—</div></div>
     <div class="sum-card"><div class="sum-label">💸 Spent</div><div class="sum-val red" id="sSpent">—</div><div class="sum-note" id="sSpentSub">—</div></div>
     <div class="sum-card"><div class="sum-label">💰 Balance</div><div class="sum-val purple" id="sBalance">—</div><div class="sum-note" id="sBalSub">—</div></div>
-    <div class="sum-card"><div class="sum-label">📊 Savings %</div><div class="sum-val amber" id="sSavings">—</div><div class="sum-note" id="sSavSub">—</div></div>
+    <div class="sum-card"><div class="sum-label">🎯 Saved</div><div class="sum-val green" id="sSavings">—</div><div class="sum-note" id="sSavSub">—</div></div>
   </div>
   <div class="card">
     <div class="card-title">Budget Breakdown</div>
@@ -448,7 +473,7 @@ body { font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; backgrou
 
     <div id="aiKeyNeeded" class="ai-key-needed" style="display:none">
       <div style="font-size:2rem;margin-bottom:8px">🤖</div>
-      <p>Add your Gemini API key in Settings to unlock the AI Advisor.<br>It's free — takes 2 minutes.</p>
+      <p>Add your <strong>Groq API key</strong> in Settings to unlock the AI Advisor.<br>It's 100% free worldwide — takes 2 minutes at <strong>console.groq.com</strong></p>
       <button class="btn-primary" style="max-width:240px;margin:0 auto" onclick="openSettings()">Open Settings</button>
     </div>
 
@@ -504,7 +529,7 @@ body { font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; backgrou
 // CONFIG
 // ═══════════════════════════════════════════
 let API        = localStorage.getItem('bgt_api')    || '';
-let GEMINI_KEY = localStorage.getItem('bgt_gemini') || '';
+let GROQ_KEY = localStorage.getItem('bgt_groq') || localStorage.getItem('bgt_gemini') || '';
 let data       = null;
 let catChart   = null;
 let activeFilter = 'all';
@@ -558,7 +583,7 @@ window.addEventListener('load', () => {
   if (!API) { openSettings(); }
   else { loadData(); }
 
-  if (GEMINI_KEY) showAiChat(); else showAiKeyNeeded();
+  if (GROQ_KEY) showAiChat(); else showAiKeyNeeded();
   addAiWelcome();
 });
 
@@ -567,7 +592,7 @@ window.addEventListener('load', () => {
 // ═══════════════════════════════════════════
 function openSettings() {
   document.getElementById('apiUrlInput').value   = API;
-  document.getElementById('geminiKeyInput').value = GEMINI_KEY;
+  document.getElementById('geminiKeyInput').value = GROQ_KEY;
   loadNotifSettings();
   document.getElementById('settingsModal').classList.remove('hidden');
 }
@@ -577,7 +602,7 @@ function saveSettings() {
   const g = document.getElementById('geminiKeyInput').value.trim();
 
   if (u) { API = u; localStorage.setItem('bgt_api', u); }
-  if (g) { GEMINI_KEY = g; localStorage.setItem('bgt_gemini', g); }
+  if (g) { GROQ_KEY = g; localStorage.setItem('bgt_groq', g); }
 
   // Save notif times
   ['Morning','Afternoon','Evening'].forEach(n => {
@@ -591,7 +616,7 @@ function saveSettings() {
   closeSettings();
   toast('Settings saved!', 's');
 
-  if (GEMINI_KEY) showAiChat(); else showAiKeyNeeded();
+  if (GROQ_KEY) showAiChat(); else showAiKeyNeeded();
   if (API) loadData();
 }
 
@@ -669,7 +694,7 @@ function switchTab(name, btn) {
   btn.classList.add('active');
   if (name === 'history' && data) renderHistory();
   if (name === 'ai') {
-    if (GEMINI_KEY) showAiChat(); else showAiKeyNeeded();
+    if (GROQ_KEY) showAiChat(); else showAiKeyNeeded();
   }
 }
 
@@ -694,11 +719,16 @@ async function loadData() {
   }
 }
 
+function setHeader(val, sub) {
+  document.getElementById('hdrBalance').textContent = val;
+  document.getElementById('hdrSub').textContent     = sub;
+}
+
 function handleNoData(m, d) {
   data = null;
   const label = MONTHS_FULL[MONTHS.indexOf(m)];
   setHeader('—','No sheet for '+label+' yet');
-  ['sIncome','sSpent','sBalance','sSavings'].forEach(id => document.getElementById(id).textContent='—');
+  ['sBudgetUsed','sSpent','sBalance','sSavings'].forEach(id => document.getElementById(id).textContent='—');
   document.getElementById('budgetBars').innerHTML = `<div class="empty"><div class="eico">📋</div><p>No data for <strong>${label}</strong> yet.<br>Add income or an expense to auto-create this month's sheet!</p></div>`;
   document.getElementById('recentTx').innerHTML = '<div class="empty"><div class="eico">✨</div><p>No transactions yet</p></div>';
   if (catChart) { catChart.destroy(); catChart = null; }
@@ -708,28 +738,51 @@ function handleNoData(m, d) {
 // DASHBOARD
 // ═══════════════════════════════════════════
 function renderDashboard(d) {
-  const spent   = Object.values(d.budgetData).reduce((s,v)=>s+(v.actual||0),0);
-  const bal     = d.actualBalance;
-  const savePct = d.totalIncome > 0 ? Math.round((bal/d.totalIncome)*100) : 0;
+  const spent    = Object.values(d.budgetData).reduce((s,v)=>s+(v.actual||0),0);
+  const bal      = d.actualBalance;
+  const inc      = d.totalIncome || 1;
+  const usedPct  = Math.round((spent / inc) * 100);
+  const savePct  = d.totalIncome > 0 ? Math.round((bal / inc) * 100) : 0;
 
-  setHeader(fmt(bal), `of ${fmt(d.totalIncome)} income this month`);
-  set('sIncome',  fmt(d.totalIncome));
-  set('sSpent',   fmt(spent));
-  set('sBalance', fmt(bal));
-  set('sSavings', savePct+'%');
-  set('sIncomeSub',  `${d.incomeRows.length} source${d.incomeRows.length!==1?'s':''}`);
-  set('sSpentSub',   `${Math.round((spent/(d.totalIncome||1))*100)||0}% of income`);
-  set('sBalSub',     bal>=0?'✓ On track':'⚠️ Over budget');
-  set('sSavSub',     savePct>=20?'Excellent 🎉':savePct>=10?'Good 👍':'Needs work 💪');
+  // Header shows balance only — no income number
+  document.getElementById('hdrBalance').textContent = fmt(bal);
+  document.getElementById('hdrSub').textContent     = `${usedPct}% of budget used this month`;
+
+  // Store income secretly for reveal gesture
+  window._hiddenIncome = d.totalIncome;
+  document.getElementById('revealAmt').textContent = fmt(d.totalIncome) + ' TZS';
+
+  // Cards — no income shown
+  set('sBudgetUsed',    usedPct + '%');
+  set('sBudgetUsedSub', `${d.incomeRows.length} income source${d.incomeRows.length!==1?'s':''}`);
+  set('sSpent',         fmt(spent));
+  set('sSpentSub',      `${d.expenses.length} transaction${d.expenses.length!==1?'s':''}`);
+  set('sBalance',       fmt(bal));
+  set('sBalSub',        bal>=0 ? '✓ On track' : '⚠️ Over budget');
+  set('sSavings',       savePct + '%');
+  set('sSavSub',        savePct>=20?'Excellent 🎉':savePct>=10?'Good 👍':'Needs work 💪');
 
   renderBudgetBars(d.budgetData);
   renderCatChart(d.budgetData);
   renderRecentTx(d.expenses);
 }
 
-function setHeader(val, sub) {
-  document.getElementById('hdrBalance').textContent = val;
-  document.getElementById('hdrSub').textContent     = sub;
+// ── 3-tap secret to reveal income ─────────────────────
+let _tapCount = 0, _tapTimer = null;
+function balanceTap() {
+  _tapCount++;
+  clearTimeout(_tapTimer);
+  _tapTimer = setTimeout(() => { _tapCount = 0; }, 800);
+  if (_tapCount >= 3) {
+    _tapCount = 0;
+    clearTimeout(_tapTimer);
+    const box = document.getElementById('incomeReveal');
+    box.style.display = 'block';
+    box.classList.remove('showing');
+    void box.offsetWidth; // reflow
+    box.classList.add('showing');
+    setTimeout(() => { box.style.display='none'; box.classList.remove('showing'); }, 4600);
+  }
 }
 
 function renderBudgetBars(bd) {
@@ -737,11 +790,18 @@ function renderBudgetBars(bd) {
     const cfg  = CAT[code]||{color:'#94a3b8',emoji:'•',name:v.name};
     const pct  = v.budgeted>0 ? Math.min((v.actual/v.budgeted)*100,120) : 0;
     const over = v.actual>v.budgeted;
-    const rem  = v.budgeted-v.actual;
+    const rem  = v.budgeted - v.actual;
+    // Show % used and remainder — NOT the raw budgeted amount
+    const remLabel = over
+      ? `<span style="color:var(--expense)">⚠ ${fmt(Math.abs(rem))} over</span>`
+      : `<span style="color:${cfg.color}">${fmt(rem)} left</span>`;
     return `<div class="budget-item">
       <div class="brow">
         <div class="blabel"><span class="bdot" style="background:${cfg.color}"></span>${cfg.emoji} ${v.name}</div>
-        <div class="bvals"><span class="brem" style="color:${over?'var(--expense)':cfg.color}">${over?'⚠ '+fmt(Math.abs(rem))+' over':fmt(rem)+' left'}</span><span>${fmt(v.actual)} / ${fmt(v.budgeted)}</span></div>
+        <div class="bvals">
+          <span class="brem">${remLabel}</span>
+          <span>${Math.round(pct)}% used &nbsp;·&nbsp; ${fmt(v.actual)} spent</span>
+        </div>
       </div>
       <div class="pbar"><div class="pfill ${over?'over':''}" style="width:${Math.min(pct,100)}%;background:${cfg.color}"></div></div>
     </div>`;
@@ -799,11 +859,21 @@ function incHtml(r, rowIdx) {
       <div class="inc-name">${esc(r.source)}</div>
       <div class="inc-meta">${r.date||''} ${r.comment?'· '+esc(r.comment):''}</div>
     </div>
-    <div style="display:flex;align-items:center;gap:8px">
-      <div class="inc-amt">+${fmt(r.actual)}</div>
+    <div class="inc-amt-wrap">
+      <div class="inc-amt" onclick="toggleIncBlur(this)" title="Tap to reveal">+${fmt(r.actual)}</div>
+      <span class="reveal-hint">👁</span>
       <button class="tx-edit-btn" onclick="openEditIncome(${rowIdx},'${esc(r.source)}','${r.date||''}',${r.expected||0},${r.actual},'${esc(r.comment||'')}','${getMonth()}')" title="Edit">✏️</button>
     </div>
   </div>`;
+}
+
+function toggleIncBlur(el) {
+  el.classList.toggle('revealed');
+  // Auto-hide after 4 seconds
+  clearTimeout(el._hideTimer);
+  if (el.classList.contains('revealed')) {
+    el._hideTimer = setTimeout(() => el.classList.remove('revealed'), 4000);
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -1014,7 +1084,7 @@ function showAiChat()       { document.getElementById('aiKeyNeeded').style.displ
 function showAiKeyNeeded()  { document.getElementById('aiKeyNeeded').style.display=''; document.getElementById('aiChat').style.display='none'; }
 
 function addAiWelcome() {
-  appendBotMsg(`👋 Hi Meshack! I'm your AI budget advisor powered by Gemini.\n\nI can:\n• Analyse your spending patterns\n• Identify areas to improve\n• Predict your end-of-month balance\n• Give personalised saving tips\n\nTap a quick question below or ask me anything!`);
+  appendBotMsg(`👋 Hi Meshack! I'm your AI budget advisor powered by **Groq AI**.\n\nI can:\n• Analyse your spending patterns\n• Identify areas to improve\n• Predict your end-of-month balance\n• Give personalised saving tips\n\nTap a quick question below or ask me anything!`);
 }
 
 function aiKeyDown(e) {
@@ -1027,7 +1097,7 @@ function sendQuick(btn) {
 }
 
 async function sendAiMessage() {
-  if (!GEMINI_KEY) { showAiKeyNeeded(); return; }
+  if (!GROQ_KEY) { showAiKeyNeeded(); return; }
   const input = document.getElementById('aiInput');
   const text  = input.value.trim();
   if (!text) return;
@@ -1039,22 +1109,24 @@ async function sendAiMessage() {
 
   try {
     // Build context from current data
-    let context = 'No data loaded yet.';
+    let context = 'No financial data loaded yet.';
     if (data) {
       const spent = Object.values(data.budgetData).reduce((s,v)=>s+(v.actual||0),0);
       const catLines = Object.entries(data.budgetData).map(([k,v])=>
-        `  ${v.name}: budgeted ${v.budgeted} TZS, actual ${v.actual} TZS (${v.budgeted>0?Math.round((v.actual/v.budgeted)*100):0}%)`
+        `  ${v.name}: budgeted ${v.budgeted} TZS, actual ${v.actual} TZS (${v.budgeted>0?Math.round((v.actual/v.budgeted)*100):0}% used)`
       ).join('\n');
       const topExp = [...data.expenses].sort((a,b)=>b.amount-a.amount).slice(0,5)
         .map(e=>`  ${e.source} (${CAT[e.category]?.name||e.category}): ${e.amount} TZS`).join('\n');
       const today = new Date();
       const daysInMonth = new Date(today.getFullYear(), today.getMonth()+1, 0).getDate();
       const dayOfMonth  = today.getDate();
-      context = `Month: ${getMonth()} (Day ${dayOfMonth} of ${daysInMonth})
+      context = `Month: ${getMonth()} (Day ${dayOfMonth} of ${daysInMonth}, ${daysInMonth-dayOfMonth} days remaining)
 Total income: ${data.totalIncome} TZS
-Total spent: ${spent} TZS
+Total spent so far: ${spent} TZS
 Remaining balance: ${data.actualBalance} TZS
 Savings rate: ${data.totalIncome>0?Math.round((data.actualBalance/data.totalIncome)*100):0}%
+Daily spend rate: ${dayOfMonth>0?Math.round(spent/dayOfMonth):0} TZS/day
+Projected month-end spend: ${Math.round((spent/dayOfMonth)*daysInMonth)} TZS
 
 Budget by category:
 ${catLines}
@@ -1063,7 +1135,7 @@ Top 5 expenses:
 ${topExp||'  (none)'}`;
     }
 
-    const sysPrompt = `You are Meshack's personal budget advisor. You speak in a friendly, direct, encouraging tone.
+    const systemPrompt = `You are Meshack's personal budget advisor. You speak in a friendly, direct, encouraging tone.
 Meshack is based in Tanzania and uses TZS (Tanzanian Shillings).
 His budget system: 40% Needs, 30% Wants, 12% Goals, 18% Charitable.
 
@@ -1071,39 +1143,46 @@ Current financial data:
 ${context}
 
 Instructions:
-- Answer questions about spending, balance, trends, predictions
-- When predicting end-of-month balance, extrapolate daily spending rate
-- For improvement advice, give 2-3 specific, actionable tips
-- Use TZS amounts. Format numbers with K/M (e.g. 500K, 1.2M)
-- Use line breaks and **bold** for emphasis. Keep answers concise (under 200 words unless detailed analysis is needed)
+- Answer questions about spending, balance, trends, and predictions
+- When predicting end-of-month balance, use the daily spend rate already calculated above
+- For improvement advice, give 2-3 specific, actionable tips based on his actual numbers
+- Format numbers as K/M (e.g. 500K, 1.2M TZS) for readability
+- Use **bold** for key figures and headings. Keep answers concise (under 250 words)
 - Be warm and supportive, not preachy`;
 
-    // Build messages including history
+    // Build messages for Groq (OpenAI format: role/content)
     const messages = [
-      ...aiChatHistory.slice(-8), // last 4 exchanges
-      { role:'user', parts:[{ text: sysPrompt+'\n\nUser question: '+text }] }
+      { role: 'system', content: systemPrompt },
+      ...aiChatHistory.slice(-8).map(m => ({ role: m.role, content: m.content })),
+      { role: 'user', content: text }
     ];
 
-    const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
-      { method:'POST', headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({ contents: messages, generationConfig:{ temperature:0.4, maxOutputTokens:800 } }) }
-    );
+    const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_KEY}` },
+      body: JSON.stringify({
+        model:       'llama3-70b-8192',
+        messages,
+        temperature: 0.4,
+        max_tokens:  800
+      })
+    });
+
     const d = await resp.json();
-    if (d.error) throw new Error(d.error.message);
-    const reply = d.candidates?.[0]?.content?.parts?.[0]?.text || 'Sorry, I could not generate a response.';
+    if (d.error) throw new Error(d.error.message || JSON.stringify(d.error));
+    const reply = d.choices?.[0]?.message?.content || 'Sorry, I could not generate a response.';
 
     removeLoadingMsg(loadId);
     appendBotMsg(reply);
 
-    // Update history
-    aiChatHistory.push({ role:'user',  parts:[{text}] });
-    aiChatHistory.push({ role:'model', parts:[{text:reply}] });
+    // Update chat history (OpenAI format)
+    aiChatHistory.push({ role: 'user',      content: text  });
+    aiChatHistory.push({ role: 'assistant', content: reply });
     if (aiChatHistory.length > 16) aiChatHistory = aiChatHistory.slice(-16);
 
   } catch(e) {
     removeLoadingMsg(loadId);
-    appendBotMsg('⚠️ Error: '+e.message+'\n\nCheck your Gemini API key in Settings.');
+    appendBotMsg('⚠️ Error: '+e.message+'\n\nMake sure your Groq API key in Settings is correct (starts with gsk_).');
   } finally {
     document.getElementById('aiSendBtn').disabled = false;
   }
