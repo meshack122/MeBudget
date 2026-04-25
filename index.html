@@ -224,6 +224,10 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .loading-msg{text-align:center;color:var(--muted);padding:22px;font-size:.84rem}
 @keyframes flashIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .flash-in{animation:flashIn .3s ease forwards}
+/* Smooth content transitions */
+.card,.gauge-card,.main-gauge-card{transition:opacity .2s ease}
+.gauge-fill{transition:stroke-dasharray .6s cubic-bezier(.4,0,.2,1),stroke .4s ease}
+.mgi-v,.gauge-pct,.main-gauge-pct,.hdr-pct{transition:color .3s ease}
 @media(max-width:360px){.cat-grid{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
@@ -538,9 +542,19 @@ function switchTab(name,btn){document.querySelectorAll('.tab-panel').forEach(p=>
 function getMonth(){return document.getElementById('monthSelect').value;}
 async function loadData(){
   if(!API){setHdr('-- %','Not connected');return;}
-  const m=getMonth();setHdr('...','Loading '+MONTHS_FULL[MONTHS.indexOf(m)]+'...');
-  try{const d=await(await fetch(API+'?action=getData&month='+m)).json();if(d.error){handleNoData(m);return;}data=d;renderDashboard(d);}
-  catch(e){toast('Failed to load - check API URL','e');setHdr('-- %','Connection error');}
+  const m=getMonth();
+  // Show cached data instantly so UI never looks blank
+  const cacheKey='bgt_cache_'+m;
+  const cached=localStorage.getItem(cacheKey);
+  if(cached){try{const cd=JSON.parse(cached);data=cd;renderDashboard(cd);setHdr(document.getElementById('hdrPct').textContent,'Refreshing...');}catch(e){}}
+  else{setHdr('...','Loading '+MONTHS_FULL[MONTHS.indexOf(m)]+'...');}
+  try{
+    const d=await(await fetch(API+'?action=getData&month='+m)).json();
+    if(d.error){handleNoData(m);return;}
+    data=d;
+    localStorage.setItem(cacheKey,JSON.stringify(d));
+    renderDashboard(d);
+  }catch(e){toast('Failed to load - check API URL','e');setHdr('-- %','Connection error');}
 }
 function handleNoData(m){
   data=null;const label=MONTHS_FULL[MONTHS.indexOf(m)];setHdr('-- %','No sheet for '+label+' yet');
@@ -648,11 +662,38 @@ function confirmDelete(type,row,source,month){
   document.getElementById('editModal').classList.remove('hidden');
 }
 async function deleteEntry(){
-  const row=document.getElementById('editRow').value,month=document.getElementById('editMonth').value;
+  const row=parseInt(document.getElementById('editRow').value);
+  const type=document.getElementById('editType').value;
+  const month=document.getElementById('editMonth').value;
   if(!API){toast('Configure API first','e');return;}
   const btn=document.getElementById('btnDelEdit');btn.disabled=true;btn.textContent='Deleting...';
-  try{const d=await(await fetch(API+'?'+new URLSearchParams({action:'deleteEntry',row,month}))).json();if(d.error)toast('Error: '+d.error,'e');else{toast('Entry deleted','s');closeEdit();document.getElementById('btnSaveEdit').style.display='';loadData();}}
-  catch(e){toast('Network error','e');}finally{btn.disabled=false;btn.textContent='Delete Entry';}
+
+  // Update local data immediately — UI responds instantly
+  if(data && month===getMonth()){
+    if(type==='income'){
+      data.incomeRows=data.incomeRows.filter(r=>r.row!==row);
+    } else {
+      data.expenses=data.expenses.filter(e=>e.row!==row);
+    }
+    // Recalculate totals locally
+    const spent=Object.values(data.budgetData).reduce((s,v)=>s+(v.actual||0),0);
+    renderDashboard(data);
+    if(document.getElementById('tab-history').classList.contains('active'))renderHistory();
+    // Invalidate cache so next load fetches fresh
+    localStorage.removeItem('bgt_cache_'+month);
+  }
+
+  closeEdit();
+  document.getElementById('btnSaveEdit').style.display='';
+  toast('Entry deleted','s');
+
+  // Fire delete to server in background — no need to wait for response to update UI
+  try{
+    const d=await(await fetch(API+'?'+new URLSearchParams({action:'deleteEntry',row,month}))).json();
+    if(d.error){toast('Server error: '+d.error,'e');loadData();} // re-sync if server failed
+    else loadData(); // silent background refresh to sync totals
+  }catch(e){toast('Network error - delete may not have saved','e');}
+  finally{btn.disabled=false;btn.textContent='Delete Entry';}
 }
 
 // ADD ENTRY
