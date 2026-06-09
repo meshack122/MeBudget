@@ -553,19 +553,19 @@ All Expenses</div>
   <!-- Summary cards -->
   <div class="debt-summary">
     <div class="debt-sum-card">
-      <div class="debt-sum-label">🟢 Owed to You</div>
+      <div class="debt-sum-label">🟢 Owed to You (IN)</div>
       <div class="debt-sum-val" id="debtOwedMe" style="color:var(--green)">--</div>
-      <div class="debt-sum-count" id="debtOwedMeCount">OUT debts</div>
+      <div class="debt-sum-count" id="debtOwedMeCount">IN debts</div>
     </div>
     <div class="debt-sum-card">
-      <div class="debt-sum-label">🔴 You Owe</div>
+      <div class="debt-sum-label">🔴 You Owe (OUT)</div>
       <div class="debt-sum-val" id="debtIOwed" style="color:var(--red)">--</div>
-      <div class="debt-sum-count" id="debtIOwedCount">IN debts</div>
+      <div class="debt-sum-count" id="debtIOwedCount">OUT debts</div>
     </div>
     <div class="debt-sum-card">
       <div class="debt-sum-label">⚡ Net</div>
       <div class="debt-sum-val" id="debtNet" style="color:var(--cyan)">--</div>
-      <div class="debt-sum-count">OUT minus IN</div>
+      <div class="debt-sum-count">IN minus OUT</div>
     </div>
   </div>
 
@@ -579,8 +579,8 @@ All Expenses</div>
     <div class="debt-add-form" id="debtAddForm" style="display:none">
       <div class="form-label" style="margin-bottom:8px">Direction</div>
       <div class="dir-toggle" id="dirToggle">
-        <button class="dir-btn active-in" id="dirInBtn" onclick="setDebtDir('in')">&#128248; I Borrowed (I Owe)</button>
-        <button class="dir-btn"           id="dirOutBtn" onclick="setDebtDir('out')">&#128176; I Lent (They Owe Me)</button>
+        <button class="dir-btn active-in" id="dirInBtn" onclick="setDebtDir('in')">💰 They Owe Me (IN)</button>
+        <button class="dir-btn"           id="dirOutBtn" onclick="setDebtDir('out')">💸 I Owe Them (OUT)</button>
       </div>
       <div class="form-group">
         <label class="form-label">Person / Name *</label>
@@ -606,8 +606,8 @@ All Expenses</div>
     <div class="debt-filter-row">
       <button class="chip active" data-df="all"    onclick="filterDebts(this)">All</button>
       <button class="chip"        data-df="unpaid" onclick="filterDebts(this)">⏳ Unpaid</button>
-      <button class="chip"        data-df="in"     onclick="filterDebts(this)" style="color:var(--red)">💸 I Borrowed</button>
-      <button class="chip"        data-df="out"    onclick="filterDebts(this)" style="color:var(--green)">💰 I Lent</button>
+      <button class="chip"        data-df="in"     onclick="filterDebts(this)" style="color:var(--green)">💰 They Owe Me</button>
+      <button class="chip"        data-df="out"    onclick="filterDebts(this)" style="color:var(--red)">💸 I Owe Them</button>
       <button class="chip"        data-df="paid"   onclick="filterDebts(this)">✓ Cleared</button>
     </div>
 
@@ -722,11 +722,11 @@ function renderDashboard(d){
   const debts  = d.debts||[];
   const unpaidIN  = d.unpaidIN  || debts.filter(x=>x.direction==='in' &&!x.paid).reduce((s,x)=>s+x.amount,0);
   const unpaidOUT = d.unpaidOUT || debts.filter(x=>x.direction==='out'&&!x.paid).reduce((s,x)=>s+x.amount,0);
-  // IN = you borrowed → reduces balance (red). OUT = you lent → adds to balance (green)
-  const adjBal  = (d.debtAdjustedBalance!==undefined) ? d.debtAdjustedBalance : (d.actualBalance - unpaidIN + unpaidOUT);
+  // IN = they owe you → adds to balance. OUT = you owe them → reduces balance
+  const adjBal  = (d.debtAdjustedBalance!==undefined) ? d.debtAdjustedBalance : (d.actualBalance + unpaidIN - unpaidOUT);
   const usedPct= Math.round((spent/inc)*100);
   const today  = new Date(),daysIn=new Date(today.getFullYear(),today.getMonth()+1,0).getDate(),dayNum=today.getDate();
-  const debtNote = debts.filter(x=>!x.paid).length ? ` · ${debts.filter(x=>!x.paid).length} debt(s)` : '';
+  const debtNote = debts.filter(x=>!x.paid).length ? ` · ${debts.filter(x=>!x.paid).length} pending debt(s)` : '';
   setHdr(usedPct+'%',`${daysIn-dayNum} days left · ${d.expenses.length} tx${debtNote}`);
   const mc=usedPct>100?'var(--red)':usedPct>80?'var(--amber)':'var(--cyan)';
   setGauge('mainGaugeFill','mainGaugePct',usedPct,mc,C_LG);
@@ -772,15 +772,16 @@ function openPanel(){
 
   // Pull debt records from loaded data
   const debts  = d.debts || [];
-  const owedMe = debts.filter(x=>x.direction==='out'&&!x.paid).reduce((s,x)=>s+x.amount,0);
-  const iOwe   = debts.filter(x=>x.direction==='in' &&!x.paid).reduce((s,x)=>s+x.amount,0);
-  const adjBal = bal - iOwe + owedMe;
+  // IN = they owe you → adds to balance (GREEN). OUT = you owe them → reduces balance (RED)
+  const owedMe = debts.filter(x=>x.direction==='in' &&!x.paid).reduce((s,x)=>s+x.amount,0);
+  const iOwe   = debts.filter(x=>x.direction==='out'&&!x.paid).reduce((s,x)=>s+x.amount,0);
+  const adjBal = bal + owedMe - iOwe;
 
   const debtSection = `
     <div class="panel-sec">Debt Impact on Budget</div>
-    <div class="panel-row"><div class="pr-left"><div class="pr-label" style="color:var(--red)">IN — You Borrowed</div><div class="pr-sub">Must repay · reduces your balance · ${debts.filter(x=>x.direction==='in'&&!x.paid).length} unpaid</div></div><div class="pr-right"><div class="pr-amount" style="color:var(--red)">-${fmt(iOwe)} TZS</div></div></div>
-    <div class="panel-row"><div class="pr-left"><div class="pr-label" style="color:var(--green)">OUT — You Lent</div><div class="pr-sub">Coming back to you · adds to your balance · ${debts.filter(x=>x.direction==='out'&&!x.paid).length} unpaid</div></div><div class="pr-right"><div class="pr-amount" style="color:var(--green)">+${fmt(owedMe)} TZS</div></div></div>
-    <div class="panel-row" style="background:rgba(0,201,255,.07)"><div class="pr-left"><div class="pr-label" style="color:var(--cyan)">True Balance (with debts)</div><div class="pr-sub">Balance ${fmt(bal)}${iOwe>0?' − IN '+fmt(iOwe):''}${owedMe>0?' + OUT '+fmt(owedMe):''}</div></div><div class="pr-right"><div class="pr-amount" style="color:${adjBal>=0?'var(--cyan)':'var(--red)'}">${adjBal>=0?'':'-'}${fmt(Math.abs(adjBal))} TZS</div></div></div>
+    <div class="panel-row"><div class="pr-left"><div class="pr-label" style="color:var(--green)">IN — They Owe You</div><div class="pr-sub">Expected to receive · adds to your balance · ${debts.filter(x=>x.direction==='in'&&!x.paid).length} unpaid</div></div><div class="pr-right"><div class="pr-amount" style="color:var(--green)">+${fmt(owedMe)} TZS</div></div></div>
+    <div class="panel-row"><div class="pr-left"><div class="pr-label" style="color:var(--red)">OUT — You Owe</div><div class="pr-sub">Must repay · reduces your balance · ${debts.filter(x=>x.direction==='out'&&!x.paid).length} unpaid</div></div><div class="pr-right"><div class="pr-amount" style="color:var(--red)">-${fmt(iOwe)} TZS</div></div></div>
+    <div class="panel-row" style="background:rgba(0,201,255,.07)"><div class="pr-left"><div class="pr-label" style="color:var(--cyan)">True Balance (with debts)</div><div class="pr-sub">Balance ${fmt(bal)}${owedMe>0?' + IN '+fmt(owedMe):''}${iOwe>0?' − OUT '+fmt(iOwe):''}</div></div><div class="pr-right"><div class="pr-amount" style="color:${adjBal>=0?'var(--cyan)':'var(--red)'}">${adjBal>=0?'':'-'}${fmt(Math.abs(adjBal))} TZS</div></div></div>
   `;
 
   const catR = Object.entries(d.budgetData).map(([code,v])=>{
@@ -835,12 +836,7 @@ function renderAllocCard(income, spent, month) {
   // Suggestion box
   const sugEl = document.getElementById('allocSuggestion');
   if (sugEl) {
-    if (unalloc > 0) {
-      sugEl.innerHTML =
-        '<div class="alloc-suggestion alloc-sug-goal" onclick="switchToGoalSuggestion(' + unalloc + ')">' +
-        '🎯 Move ' + fmt(unalloc) + ' TZS to Goals — reach 100% efficiency' +
-        '</div>';
-    } else if (pct === 100) {
+    if (pct === 100) {
       sugEl.innerHTML = '<div class="alloc-suggestion alloc-sug-full">✅ 100% allocated — maximum efficiency!</div>';
     } else {
       sugEl.innerHTML = '';
@@ -880,15 +876,6 @@ function renderAllocCard(income, spent, month) {
   }
 }
 
-// Quick action: jump to Add Entry pre-selecting Goal category
-function switchToGoalSuggestion(amount) {
-  switchTab('add', document.querySelector('.nav-btn:nth-child(2)'));
-  setType('expense');
-  document.querySelectorAll('#frmExpense .cat-btn').forEach(b => b.classList.toggle('sel', b.dataset.cat === 'G'));
-  selCat = 'G';
-  setFmtVal('eAmount', amount);
-  toast('Allocating ' + fmt(amount) + ' to Goals 🎯', 'i');
-}
 
 function renderRecentTx(exps){if(!exps||!exps.length){document.getElementById('recentTx').innerHTML='<div class="empty"><div class="eico">&#10024;</div><p>No transactions yet</p></div>';return;}document.getElementById('recentTx').innerHTML=[...exps].reverse().slice(0,8).map(tx=>txHtml(tx,false)).join('');}
 function txHtml(tx,showActions=true){
@@ -1051,14 +1038,20 @@ let debtFormOpen = false;
 function renderDebts() {
   const debts = (data && data.debts) ? data.debts : [];
 
-  // IN  = you borrowed → you owe → reduces your budget → RED
-  // OUT = you lent     → they owe you → adds to your budget → GREEN
-  const youOwe    = debts.filter(d => d.direction === 'in'  && !d.paid).reduce((s,d) => s+d.amount, 0);
-  const owedToYou = debts.filter(d => d.direction === 'out' && !d.paid).reduce((s,d) => s+d.amount, 0);
-  const net       = owedToYou - youOwe;  // positive = you're net owed
+  // IN  = they owe you (money came IN, i.e. you lent it, it should come back IN) → GREEN → adds to balance
+  // OUT = you owe them (money went OUT from you, you borrowed it) → RED → reduces balance
+  const owedToYou = debts.filter(d => d.direction === 'in'  && !d.paid).reduce((s,d) => s+d.amount, 0);
+  const youOwe    = debts.filter(d => d.direction === 'out' && !d.paid).reduce((s,d) => s+d.amount, 0);
+  const net       = owedToYou - youOwe;  // positive = net owed to you
 
-  set('debtOwedMe', fmt(owedToYou));  // GREEN card = OUT debts (they owe you)
-  set('debtIOwed',  fmt(youOwe));     // RED card   = IN debts  (you owe)
+  set('debtOwedMe', fmt(owedToYou));  // GREEN card = IN debts (they owe you)
+  set('debtIOwed',  fmt(youOwe));     // RED card   = OUT debts (you owe)
+
+  // Update count labels
+  const inCount  = debts.filter(d => d.direction === 'in'  && !d.paid).length;
+  const outCount = debts.filter(d => d.direction === 'out' && !d.paid).length;
+  set('debtOwedMeCount', inCount  + (inCount  === 1 ? ' debt' : ' debts'));
+  set('debtIOwedCount',  outCount + (outCount === 1 ? ' debt' : ' debts'));
 
   const netEl = document.getElementById('debtNet');
   if (netEl) {
@@ -1089,12 +1082,12 @@ function renderDebtList(debts) {
 
   list.innerHTML = filtered.map(d => {
     const isIn    = d.direction === 'in';
-    // IN  = money came IN to you (you borrowed) → you owe it back → RED
-    // OUT = money went OUT from you (you lent)  → they owe you   → GREEN
+    // IN  = they owe you (money should come IN to you) → GREEN
+    // OUT = you owe them (money went OUT from you)     → RED
     const dirLabel = isIn ? 'IN' : 'OUT';
-    const dirClass = isIn ? 'in' : 'out';          // CSS: .in=red, .out=green
-    const dirTip   = isIn ? '→ you owe (borrowed)' : '← they owe you (lent)';
-    const amtColor = isIn ? 'var(--red)' : 'var(--green)';
+    const dirClass = isIn ? 'out' : 'in';          // CSS: .out=green (owed to you), .in=red (you owe)
+    const dirTip   = isIn ? '← they owe you' : '→ you owe them';
+    const amtColor = isIn ? 'var(--green)' : 'var(--red)';
     const paidClass = d.paid ? 'paid-badge' : 'unpaid';
     const paidLabel = d.paid ? '✓ Cleared' : '⏳ Pending';
     const itemClass = d.paid ? 'debt-item paid' : 'debt-item';
@@ -1106,7 +1099,7 @@ function renderDebtList(debts) {
         <div class="debt-meta">${dirTip}${d.comment ? ' · ' + esc(d.comment) : ''}</div>
       </div>
       <div class="debt-right">
-        <div class="debt-amount" style="color:${amtColor}">${isIn ? '-' : '+'}${fmt(d.amount)}</div>
+        <div class="debt-amount" style="color:${amtColor}">${isIn ? '+' : '-'}${fmt(d.amount)}</div>
         <span class="debt-status ${paidClass}">${paidLabel}</span>
         <div class="debt-actions">
           ${!d.paid
