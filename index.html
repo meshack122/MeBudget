@@ -264,28 +264,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .card,.gauge-card,.main-gauge-card{transition:opacity .2s ease}
 .gauge-fill{transition:stroke-dasharray .6s cubic-bezier(.4,0,.2,1),stroke .4s ease}
 .mgi-v,.gauge-pct,.main-gauge-pct,.hdr-pct{transition:color .3s ease}
-/* ── Allocation tracker ────────────────────────────── */
-.alloc-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:13px}
-.alloc-bar-wrap{height:12px;background:rgba(255,255,255,.06);border-radius:6px;overflow:hidden;display:flex;margin:10px 0 6px}
-.alloc-bar-spent{height:100%;border-radius:6px 0 0 6px;transition:width .7s ease}
-.alloc-bar-unalloc{height:100%;border-radius:0 6px 6px 0;transition:width .7s ease}
-.alloc-row{display:flex;align-items:center;justify-content:space-between;font-size:.76rem;margin-bottom:3px}
-.alloc-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px}
-.alloc-labels{display:flex;gap:14px}
-.alloc-suggestion{margin-top:9px;padding:9px 12px;border-radius:9px;font-size:.78rem;font-weight:600;border:1px dashed;display:flex;align-items:center;gap:8px;cursor:pointer;transition:all .2s}
-.alloc-sug-goal{border-color:rgba(0,255,148,.4);background:rgba(0,255,148,.06);color:var(--green)}
-.alloc-sug-goal:hover{background:rgba(0,255,148,.14)}
-.alloc-sug-full{border-color:rgba(0,201,255,.3);background:rgba(0,201,255,.05);color:var(--cyan)}
-.alloc-sug-over{border-color:rgba(255,69,96,.35);background:rgba(255,69,96,.07);color:var(--red)}
-/* Month allocation history */
-.alloc-hist{margin-top:10px;border-top:1px solid rgba(255,255,255,.06);padding-top:10px}
-.alloc-hist-title{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:8px}
-.alloc-hist-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:.75rem}
-.alloc-hist-month{width:30px;font-weight:700;color:var(--muted);flex-shrink:0}
-.alloc-hist-bar{flex:1;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden}
-.alloc-hist-fill{height:100%;border-radius:3px;transition:width .5s ease}
-.alloc-hist-pct{width:36px;text-align:right;font-weight:700;flex-shrink:0}
-.alloc-hist-amt{font-size:.68rem;color:var(--muted);flex-shrink:0;width:60px;text-align:right}
 @media(max-width:360px){.cat-grid{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
@@ -416,27 +394,6 @@ Meshack
 <div class="gauge-card" style="--g-color:var(--charity)">
 <div class="gauge-wrap"><svg viewBox="0 0 78 78"><circle cx="39" cy="39" r="31" class="gauge-track"/><circle cx="39" cy="39" r="31" class="gauge-fill" stroke="var(--charity)" id="g-C" stroke-dasharray="0 194.8" stroke-linecap="round"/></svg><div class="gauge-center"><div class="gauge-pct" id="gp-C" style="color:var(--charity)">--</div><div class="gauge-emoji">&#128153;</div></div></div>
 <div class="gauge-label">Charitable</div><div class="gauge-left" id="gl-C">--</div></div>
-</div>
-
-<!-- Allocation Efficiency Card -->
-<div class="alloc-card">
-  <div class="card-title" style="margin-bottom:6px">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-    Budget Allocation Efficiency
-  </div>
-  <div class="alloc-bar-wrap">
-    <div class="alloc-bar-spent"   id="allocBarSpent"></div>
-    <div class="alloc-bar-unalloc" id="allocBarUnalloc"></div>
-  </div>
-  <div class="alloc-labels">
-    <span><span class="alloc-dot" id="allocDotSpent"></span><span id="allocLabelSpent">--% allocated</span></span>
-    <span><span class="alloc-dot" style="background:var(--amber)"></span><span id="allocLabelUnalloc">--% unallocated</span></span>
-  </div>
-  <div id="allocSuggestion"></div>
-  <div class="alloc-hist" id="allocHist" style="display:none">
-    <div class="alloc-hist-title">Monthly allocation history</div>
-    <div id="allocHistRows"></div>
-  </div>
 </div>
 
 <div class="panel-trigger">
@@ -587,6 +544,10 @@ All Expenses</div>
         <input type="text" class="form-input" id="dPerson" placeholder="e.g. John, Msuya, Jeezy...">
       </div>
       <div class="form-group">
+        <label class="form-label">Date *</label>
+        <input type="date" class="form-input" id="dDate">
+      </div>
+      <div class="form-group">
         <label class="form-label">Amount (TZS) *</label>
         <input type="text" class="form-input" id="dAmount" inputmode="numeric" placeholder="0" oninput="fmtInput(this)">
       </div>
@@ -650,7 +611,7 @@ let notifSettings=JSON.parse(localStorage.getItem('bgt_notif')||JSON.stringify({
 // INIT
 window.addEventListener('load',()=>{
   const today=new Date().toISOString().split('T')[0];
-  ['eDate','iDate'].forEach(id=>document.getElementById(id).value=today);
+  ['eDate','iDate','dDate'].forEach(id=>document.getElementById(id).value=today);
   MONTHS.forEach((m,i)=>{['eMonth','iMonth','dMonth'].forEach(id=>{const o=document.createElement('option');o.value=m;o.textContent=MONTHS_FULL[i];document.getElementById(id).appendChild(o);});});
   document.getElementById('monthSelect').value=MONTHS[new Date().getMonth()];
   loadNotifSettings();scheduleNotifications();
@@ -746,7 +707,6 @@ function renderDashboard(d){
     le.className='gauge-left'+(over?' gauge-over':'');
   });
   renderRecentTx(d.expenses);
-  renderAllocCard(d.totalIncome, spent, getMonth());
   if(document.getElementById('tab-debts').classList.contains('active'))renderDebts();
   window._dashData=d;
   window._adjBal=adjBal;
@@ -800,82 +760,6 @@ function openPanel(){
 }
 function closePanelOnBg(e){if(e.target===document.getElementById('panelOverlay'))closePanel();}
 function closePanel(){document.getElementById('panelOverlay').classList.remove('open');}
-
-// TRANSACTIONS
-// ── ALLOCATION EFFICIENCY ─────────────────────────────
-function renderAllocCard(income, spent, month) {
-  if (!income || income === 0) return;
-  const pct      = Math.min(Math.round((spent / income) * 100), 100);
-  const unalloc  = Math.max(income - spent, 0);
-  const unalPct  = 100 - pct;
-
-  // Color logic: 95-100% = green (efficient), 80-95% = amber, <80% = red
-  const color = pct >= 95 ? 'var(--goal)' : pct >= 80 ? 'var(--want)' : 'var(--red)';
-
-  // Bar
-  const spentEl   = document.getElementById('allocBarSpent');
-  const unallocEl = document.getElementById('allocBarUnalloc');
-  const dotEl     = document.getElementById('allocDotSpent');
-  if (spentEl) {
-    spentEl.style.width      = pct + '%';
-    spentEl.style.background = color;
-  }
-  if (unallocEl) {
-    unallocEl.style.width      = unalPct + '%';
-    unallocEl.style.background = unalloc > 0 ? 'rgba(255,171,64,.35)' : 'transparent';
-  }
-  if (dotEl) dotEl.style.background = color;
-
-  // Labels
-  const lSpent   = document.getElementById('allocLabelSpent');
-  const lUnalloc = document.getElementById('allocLabelUnalloc');
-  if (lSpent)   lSpent.textContent   = pct + '% allocated (' + fmt(spent) + ')';
-  if (lUnalloc) lUnalloc.textContent = unalPct + '% unallocated (' + fmt(unalloc) + ')';
-  lUnalloc.style.color = unalloc > 0 ? 'var(--want)' : 'var(--muted)';
-
-  // Suggestion box
-  const sugEl = document.getElementById('allocSuggestion');
-  if (sugEl) {
-    if (pct === 100) {
-      sugEl.innerHTML = '<div class="alloc-suggestion alloc-sug-full">✅ 100% allocated — maximum efficiency!</div>';
-    } else {
-      sugEl.innerHTML = '';
-    }
-  }
-
-  // Save to monthly history in localStorage
-  const histKey  = 'bgt_alloc_hist';
-  const hist     = JSON.parse(localStorage.getItem(histKey) || '{}');
-  hist[month]    = { income, spent, pct, unalloc };
-  localStorage.setItem(histKey, JSON.stringify(hist));
-
-  // Render history rows (last 6 months)
-  const histEl = document.getElementById('allocHist');
-  const rowsEl = document.getElementById('allocHistRows');
-  if (histEl && rowsEl) {
-    const allMonths = MONTHS.filter(m => hist[m]);
-    if (allMonths.length > 1) {
-      histEl.style.display = '';
-      rowsEl.innerHTML = allMonths.slice(-6).reverse().map(m => {
-        const h    = hist[m];
-        const hPct = Math.min(h.pct, 100);
-        const hCol = h.pct >= 95 ? 'var(--goal)' : h.pct >= 80 ? 'var(--want)' : 'var(--red)';
-        const unA  = h.unalloc > 0
-          ? ' <span style="color:var(--want);font-size:.62rem">+' + fmt(h.unalloc) + ' unalloc</span>'
-          : ' <span style="color:var(--goal);font-size:.62rem">✓ full</span>';
-        return '<div class="alloc-hist-row">' +
-          '<span class="alloc-hist-month">' + m + '</span>' +
-          '<div class="alloc-hist-bar"><div class="alloc-hist-fill" style="width:' + hPct + '%;background:' + hCol + '"></div></div>' +
-          '<span class="alloc-hist-pct" style="color:' + hCol + '">' + h.pct + '%</span>' +
-          unA +
-          '</div>';
-      }).join('');
-    } else {
-      histEl.style.display = 'none';
-    }
-  }
-}
-
 
 function renderRecentTx(exps){if(!exps||!exps.length){document.getElementById('recentTx').innerHTML='<div class="empty"><div class="eico">&#10024;</div><p>No transactions yet</p></div>';return;}document.getElementById('recentTx').innerHTML=[...exps].reverse().slice(0,8).map(tx=>txHtml(tx,false)).join('');}
 function txHtml(tx,showActions=true){
@@ -1096,7 +980,7 @@ function renderDebtList(debts) {
       <div class="debt-dir ${dirClass}">${dirLabel}</div>
       <div class="debt-info">
         <div class="debt-name ${d.paid ? 'paid-name' : ''}">${esc(d.person)}</div>
-        <div class="debt-meta">${dirTip}${d.comment ? ' · ' + esc(d.comment) : ''}</div>
+        <div class="debt-meta">${d.date ? d.date + ' · ' : ''}${dirTip}${d.comment ? ' · ' + esc(d.comment) : ''}</div>
       </div>
       <div class="debt-right">
         <div class="debt-amount" style="color:${amtColor}">${isIn ? '+' : '-'}${fmt(d.amount)}</div>
@@ -1105,7 +989,7 @@ function renderDebtList(debts) {
           ${!d.paid
             ? `<button class="debt-btn pay-btn" onclick="toggleDebtPaid(${d.row},'${getMonth()}',true)">Clear</button>`
             : `<button class="debt-btn" onclick="toggleDebtPaid(${d.row},'${getMonth()}',false)">Undo</button>`}
-          <button class="debt-btn" onclick="openDebtEdit(${d.row},'${esc(d.person)}','${d.direction}',${d.amount},'${esc(d.comment||'')}','${getMonth()}')">✏️</button>
+          <button class="debt-btn" onclick="openDebtEdit(${d.row},'${esc(d.person)}','${d.direction}',${d.amount},'${esc(d.comment||'')}','${getMonth()}','${d.date||''}')">✏️</button>
           <button class="debt-btn" style="color:var(--red)" onclick="confirmDebtDelete(${d.row},'${esc(d.person)}','${getMonth()}')">🗑️</button>
         </div>
       </div>
@@ -1136,23 +1020,26 @@ function setDebtDir(dir) {
 // Submit new debt
 async function submitDebt() {
   const person  = document.getElementById('dPerson').value.trim();
+  const date    = document.getElementById('dDate').value;
   const amount  = getRaw('dAmount');
   const comment = document.getElementById('dComment').value.trim();
   const month   = document.getElementById('dMonth').value || getMonth();
 
   if (!person || !amount) { toast('Person and amount are required', 'e'); return; }
+  if (!date) { toast('Date is required', 'e'); return; }
   if (!API) { toast('Configure API URL first', 'e'); openSettings(); return; }
 
   const btn = document.getElementById('btnAddDebt');
   btn.disabled = true; btn.textContent = 'Saving…';
 
   try {
-    const p = new URLSearchParams({ action:'addDebt', person, direction:debtDir, amount, comment, month });
+    const p = new URLSearchParams({ action:'addDebt', person, date, direction:debtDir, amount, comment, month });
     const d = await (await fetch(`${API}?${p}`)).json();
     if (d.error) { toast('Error: ' + d.error, 'e'); }
     else {
       toast(`✓ Debt recorded in ${d.month}!`, 's');
       document.getElementById('dPerson').value  = '';
+      document.getElementById('dDate').value    = new Date().toISOString().split('T')[0];
       document.getElementById('dAmount').value  = '';
       document.getElementById('dAmount').dataset.raw = '';
       document.getElementById('dComment').value = '';
@@ -1183,11 +1070,12 @@ async function toggleDebtPaid(row, month, paid) {
 }
 
 // Edit debt — reuses the same inline form in a pre-filled state
-function openDebtEdit(row, person, direction, amount, comment, month) {
+function openDebtEdit(row, person, direction, amount, comment, month, date) {
   // Open form and pre-fill
   if (!debtFormOpen) toggleDebtForm();
   setDebtDir(direction);
   document.getElementById('dPerson').value   = person;
+  document.getElementById('dDate').value     = date || new Date().toISOString().split('T')[0];
   setFmtVal('dAmount', amount);
   document.getElementById('dComment').value  = comment;
   document.getElementById('dMonth').value    = month;
@@ -1197,13 +1085,15 @@ function openDebtEdit(row, person, direction, amount, comment, month) {
   btn.textContent = 'Update Debt';
   btn.onclick     = async function() {
     const newPerson  = document.getElementById('dPerson').value.trim();
+    const newDate    = document.getElementById('dDate').value;
     const newAmount  = getRaw('dAmount');
     const newComment = document.getElementById('dComment').value.trim();
     const newMonth   = document.getElementById('dMonth').value || getMonth();
     if (!newPerson || !newAmount) { toast('Person and amount required', 'e'); return; }
+    if (!newDate) { toast('Date is required', 'e'); return; }
     btn.disabled = true; btn.textContent = 'Saving…';
     try {
-      const p = new URLSearchParams({ action:'editDebt', row, person:newPerson, direction:debtDir, amount:newAmount, comment:newComment, month:newMonth, paid: 'n' });
+      const p = new URLSearchParams({ action:'editDebt', row, person:newPerson, date:newDate, direction:debtDir, amount:newAmount, comment:newComment, month:newMonth, paid: 'n' });
       const d = await (await fetch(`${API}?${p}`)).json();
       if (d.error) { toast('Error: '+d.error, 'e'); }
       else { toast('✓ Debt updated!', 's'); toggleDebtForm(); await loadData(); renderDebts(); }
