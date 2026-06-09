@@ -218,16 +218,74 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .ai-spinner-dot:nth-child(2){animation-delay:.18s}
 .ai-spinner-dot:nth-child(3){animation-delay:.36s}
 @keyframes bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}
-.empty{text-align:center;padding:22px 14px;color:var(--muted)}
+/* ── Debt tracker ────────────────────────────────────────── */
+.debt-summary{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:13px}
+.debt-sum-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:12px 10px;text-align:center}
+.debt-sum-label{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:5px}
+.debt-sum-val{font-size:1.1rem;font-weight:800;font-family:var(--mono)}
+.debt-item{display:flex;align-items:flex-start;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.05);gap:10px}
+.debt-item:last-child{border-bottom:none}
+.debt-item.paid{opacity:.45}
+.debt-dir{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:800;flex-shrink:0;border:1px solid var(--border);font-family:var(--mono)}
+.debt-dir.in{background:rgba(255,69,96,.12);border-color:rgba(255,69,96,.35);color:var(--red)}
+.debt-dir.out{background:rgba(0,255,148,.12);border-color:rgba(0,255,148,.35);color:var(--green)}
+.debt-info{flex:1;min-width:0}
+.debt-name{font-size:.88rem;font-weight:700}
+.debt-name.paid-name{text-decoration:line-through}
+.debt-meta{font-size:.7rem;color:var(--muted);margin-top:2px}
+.debt-right{text-align:right;flex-shrink:0}
+.debt-amount{font-size:.92rem;font-weight:800;font-family:var(--mono)}
+.debt-status{font-size:.62rem;font-weight:700;padding:2px 7px;border-radius:5px;display:inline-block;margin-top:3px}
+.debt-status.unpaid{background:rgba(255,171,64,.15);color:var(--amber);border:1px solid rgba(255,171,64,.3)}
+.debt-status.paid-badge{background:rgba(0,255,148,.1);color:var(--green);border:1px solid rgba(0,255,148,.25)}
+.debt-actions{display:flex;gap:4px;margin-top:4px;justify-content:flex-end}
+.debt-btn{padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:rgba(0,201,255,.04);cursor:pointer;font-size:.67rem;font-weight:700;font-family:inherit;color:var(--text);transition:all .18s}
+.debt-btn.pay-btn{border-color:rgba(0,255,148,.4);color:var(--green);background:rgba(0,255,148,.08)}
+.debt-btn.pay-btn:hover{background:rgba(0,255,148,.18)}
+.debt-btn:hover{border-color:var(--cyan);background:rgba(0,201,255,.1)}
+.debt-filter-row{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;scrollbar-width:none}
+.debt-filter-row::-webkit-scrollbar{display:none}
+/* Add debt inline form */
+.debt-add-toggle{width:100%;padding:10px;background:rgba(0,201,255,.06);border:1px dashed rgba(0,201,255,.3);border-radius:10px;color:var(--cyan);font-size:.8rem;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:12px;transition:all .2s}
+.debt-add-toggle:hover{background:rgba(0,201,255,.12)}
+.debt-add-form{background:rgba(0,12,30,.6);border:1px solid rgba(0,201,255,.2);border-radius:var(--r);padding:14px;margin-bottom:12px}
+.dir-toggle{display:flex;gap:8px;margin-bottom:12px}
+.dir-btn{flex:1;padding:9px;border-radius:9px;font-size:.8rem;font-weight:700;cursor:pointer;font-family:inherit;border:2px solid var(--border);background:transparent;transition:all .18s}
+.dir-btn.active-in{border-color:var(--red);background:rgba(255,69,96,.12);color:var(--red)}
+.dir-btn.active-out{border-color:var(--green);background:rgba(0,255,148,.12);color:var(--green)}
+.dir-btn:not(.active-in):not(.active-out){color:var(--muted)}
+
+
 .empty .eico{font-size:1.9rem;margin-bottom:6px}
 .empty p{font-size:.82rem;line-height:1.5}
 .loading-msg{text-align:center;color:var(--muted);padding:22px;font-size:.84rem}
-@keyframes flashIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-.flash-in{animation:flashIn .3s ease forwards}
+
 /* Smooth content transitions */
 .card,.gauge-card,.main-gauge-card{transition:opacity .2s ease}
 .gauge-fill{transition:stroke-dasharray .6s cubic-bezier(.4,0,.2,1),stroke .4s ease}
 .mgi-v,.gauge-pct,.main-gauge-pct,.hdr-pct{transition:color .3s ease}
+/* ── Allocation tracker ────────────────────────────── */
+.alloc-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:13px}
+.alloc-bar-wrap{height:12px;background:rgba(255,255,255,.06);border-radius:6px;overflow:hidden;display:flex;margin:10px 0 6px}
+.alloc-bar-spent{height:100%;border-radius:6px 0 0 6px;transition:width .7s ease}
+.alloc-bar-unalloc{height:100%;border-radius:0 6px 6px 0;transition:width .7s ease}
+.alloc-row{display:flex;align-items:center;justify-content:space-between;font-size:.76rem;margin-bottom:3px}
+.alloc-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px}
+.alloc-labels{display:flex;gap:14px}
+.alloc-suggestion{margin-top:9px;padding:9px 12px;border-radius:9px;font-size:.78rem;font-weight:600;border:1px dashed;display:flex;align-items:center;gap:8px;cursor:pointer;transition:all .2s}
+.alloc-sug-goal{border-color:rgba(0,255,148,.4);background:rgba(0,255,148,.06);color:var(--green)}
+.alloc-sug-goal:hover{background:rgba(0,255,148,.14)}
+.alloc-sug-full{border-color:rgba(0,201,255,.3);background:rgba(0,201,255,.05);color:var(--cyan)}
+.alloc-sug-over{border-color:rgba(255,69,96,.35);background:rgba(255,69,96,.07);color:var(--red)}
+/* Month allocation history */
+.alloc-hist{margin-top:10px;border-top:1px solid rgba(255,255,255,.06);padding-top:10px}
+.alloc-hist-title{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:8px}
+.alloc-hist-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:.75rem}
+.alloc-hist-month{width:30px;font-weight:700;color:var(--muted);flex-shrink:0}
+.alloc-hist-bar{flex:1;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden}
+.alloc-hist-fill{height:100%;border-radius:3px;transition:width .5s ease}
+.alloc-hist-pct{width:36px;text-align:right;font-weight:700;flex-shrink:0}
+.alloc-hist-amt{font-size:.68rem;color:var(--muted);flex-shrink:0;width:60px;text-align:right}
 @media(max-width:360px){.cat-grid{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
@@ -360,6 +418,27 @@ Meshack
 <div class="gauge-label">Charitable</div><div class="gauge-left" id="gl-C">--</div></div>
 </div>
 
+<!-- Allocation Efficiency Card -->
+<div class="alloc-card">
+  <div class="card-title" style="margin-bottom:6px">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+    Budget Allocation Efficiency
+  </div>
+  <div class="alloc-bar-wrap">
+    <div class="alloc-bar-spent"   id="allocBarSpent"></div>
+    <div class="alloc-bar-unalloc" id="allocBarUnalloc"></div>
+  </div>
+  <div class="alloc-labels">
+    <span><span class="alloc-dot" id="allocDotSpent"></span><span id="allocLabelSpent">--% allocated</span></span>
+    <span><span class="alloc-dot" style="background:var(--amber)"></span><span id="allocLabelUnalloc">--% unallocated</span></span>
+  </div>
+  <div id="allocSuggestion"></div>
+  <div class="alloc-hist" id="allocHist" style="display:none">
+    <div class="alloc-hist-title">Monthly allocation history</div>
+    <div id="allocHistRows"></div>
+  </div>
+</div>
+
 <div class="panel-trigger">
 <button class="panel-btn" onclick="openPanel()">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
@@ -468,6 +547,74 @@ All Expenses</div>
 </button>
 </div></div></div>
 
+<!-- DEBTS TAB -->
+<div class="tab-panel" id="tab-debts">
+
+  <!-- Summary cards -->
+  <div class="debt-summary">
+    <div class="debt-sum-card">
+      <div class="debt-sum-label">🟢 Owed to You</div>
+      <div class="debt-sum-val" id="debtOwedMe" style="color:var(--green)">--</div>
+      <div class="debt-sum-count" id="debtOwedMeCount">OUT debts</div>
+    </div>
+    <div class="debt-sum-card">
+      <div class="debt-sum-label">🔴 You Owe</div>
+      <div class="debt-sum-val" id="debtIOwed" style="color:var(--red)">--</div>
+      <div class="debt-sum-count" id="debtIOwedCount">IN debts</div>
+    </div>
+    <div class="debt-sum-card">
+      <div class="debt-sum-label">⚡ Net</div>
+      <div class="debt-sum-val" id="debtNet" style="color:var(--cyan)">--</div>
+      <div class="debt-sum-count">OUT minus IN</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <!-- Add debt toggle -->
+    <button class="debt-add-toggle" id="debtAddToggle" onclick="toggleDebtForm()">
+      &#43; Record a new debt
+    </button>
+
+    <!-- Inline add form -->
+    <div class="debt-add-form" id="debtAddForm" style="display:none">
+      <div class="form-label" style="margin-bottom:8px">Direction</div>
+      <div class="dir-toggle" id="dirToggle">
+        <button class="dir-btn active-in" id="dirInBtn" onclick="setDebtDir('in')">&#128248; I Borrowed (I Owe)</button>
+        <button class="dir-btn"           id="dirOutBtn" onclick="setDebtDir('out')">&#128176; I Lent (They Owe Me)</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Person / Name *</label>
+        <input type="text" class="form-input" id="dPerson" placeholder="e.g. John, Msuya, Jeezy...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Amount (TZS) *</label>
+        <input type="text" class="form-input" id="dAmount" inputmode="numeric" placeholder="0" oninput="fmtInput(this)">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Comment (deadline, reason...)</label>
+        <input type="text" class="form-input" id="dComment" placeholder="e.g. Return before July">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Month</label>
+        <select class="form-select" id="dMonth"><option value="">-- current month --</option></select>
+      </div>
+      <button class="btn-primary" id="btnAddDebt" onclick="submitDebt()">Save Debt Record</button>
+      <button class="btn-ghost" style="margin-top:4px" onclick="toggleDebtForm()">Cancel</button>
+    </div>
+
+    <!-- Filter chips -->
+    <div class="debt-filter-row">
+      <button class="chip active" data-df="all"    onclick="filterDebts(this)">All</button>
+      <button class="chip"        data-df="unpaid" onclick="filterDebts(this)">⏳ Unpaid</button>
+      <button class="chip"        data-df="in"     onclick="filterDebts(this)" style="color:var(--red)">💸 I Borrowed</button>
+      <button class="chip"        data-df="out"    onclick="filterDebts(this)" style="color:var(--green)">💰 I Lent</button>
+      <button class="chip"        data-df="paid"   onclick="filterDebts(this)">✓ Cleared</button>
+    </div>
+
+    <div id="debtList"><div class="loading-msg">Loading...</div></div>
+  </div>
+</div>
+
 </div><!-- /content -->
 
 <nav class="bottom-nav">
@@ -480,6 +627,9 @@ Add</button>
 <button class="nav-btn" onclick="switchTab('history',this)">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
 History</button>
+<button class="nav-btn" onclick="switchTab('debts',this)">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+Debts</button>
 <button class="nav-btn" onclick="switchTab('ai',this)">
 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
 AI</button>
@@ -501,7 +651,7 @@ let notifSettings=JSON.parse(localStorage.getItem('bgt_notif')||JSON.stringify({
 window.addEventListener('load',()=>{
   const today=new Date().toISOString().split('T')[0];
   ['eDate','iDate'].forEach(id=>document.getElementById(id).value=today);
-  MONTHS.forEach((m,i)=>{['eMonth','iMonth'].forEach(id=>{const o=document.createElement('option');o.value=m;o.textContent=MONTHS_FULL[i];document.getElementById(id).appendChild(o);});});
+  MONTHS.forEach((m,i)=>{['eMonth','iMonth','dMonth'].forEach(id=>{const o=document.createElement('option');o.value=m;o.textContent=MONTHS_FULL[i];document.getElementById(id).appendChild(o);});});
   document.getElementById('monthSelect').value=MONTHS[new Date().getMonth()];
   loadNotifSettings();scheduleNotifications();
   if('Notification'in window&&Notification.permission==='default')document.getElementById('notifBanner').classList.remove('hidden');
@@ -536,7 +686,7 @@ function scheduleNotifications(){
 }
 
 // NAV
-function switchTab(name,btn){document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));document.getElementById('tab-'+name).classList.add('active');btn.classList.add('active');if(name==='history'&&data)renderHistory();if(name==='ai'){if(GROQ_KEY)showAiChat();else showAiKeyNeeded();}}
+function switchTab(name,btn){document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));document.getElementById('tab-'+name).classList.add('active');btn.classList.add('active');if(name==='history'&&data)renderHistory();if(name==='debts')renderDebts();if(name==='ai'){if(GROQ_KEY)showAiChat();else showAiKeyNeeded();}}
 
 // LOAD DATA
 function getMonth(){return document.getElementById('monthSelect').value;}
@@ -567,26 +717,41 @@ function setHdr(pct,sub){document.getElementById('hdrPct').textContent=pct;docum
 
 // DASHBOARD
 function renderDashboard(d){
-  const spent=Object.values(d.budgetData).reduce((s,v)=>s+(v.actual||0),0);
-  const inc=d.totalIncome||1,usedPct=Math.round((spent/inc)*100);
-  const today=new Date(),daysIn=new Date(today.getFullYear(),today.getMonth()+1,0).getDate(),dayNum=today.getDate();
-  setHdr(usedPct+'%',`${daysIn-dayNum} days left ${d.expenses.length} transactions`);
+  const spent  = Object.values(d.budgetData).reduce((s,v)=>s+(v.actual||0),0);
+  const inc    = d.totalIncome||1;
+  const debts  = d.debts||[];
+  const unpaidIN  = d.unpaidIN  || debts.filter(x=>x.direction==='in' &&!x.paid).reduce((s,x)=>s+x.amount,0);
+  const unpaidOUT = d.unpaidOUT || debts.filter(x=>x.direction==='out'&&!x.paid).reduce((s,x)=>s+x.amount,0);
+  // IN = you borrowed → reduces balance (red). OUT = you lent → adds to balance (green)
+  const adjBal  = (d.debtAdjustedBalance!==undefined) ? d.debtAdjustedBalance : (d.actualBalance - unpaidIN + unpaidOUT);
+  const usedPct= Math.round((spent/inc)*100);
+  const today  = new Date(),daysIn=new Date(today.getFullYear(),today.getMonth()+1,0).getDate(),dayNum=today.getDate();
+  const debtNote = debts.filter(x=>!x.paid).length ? ` · ${debts.filter(x=>!x.paid).length} debt(s)` : '';
+  setHdr(usedPct+'%',`${daysIn-dayNum} days left · ${d.expenses.length} tx${debtNote}`);
   const mc=usedPct>100?'var(--red)':usedPct>80?'var(--amber)':'var(--cyan)';
   setGauge('mainGaugeFill','mainGaugePct',usedPct,mc,C_LG);
-  set('mgiTx',d.expenses.length.toString());set('mgiSrc',d.incomeRows.length.toString());set('mgiDay',dayNum+'/'+daysIn);
-  const se=document.getElementById('mgiStatus');se.style.color=usedPct>100?'var(--red)':usedPct>80?'var(--amber)':'var(--green)';se.textContent=usedPct>100?'OVERLOAD':usedPct>80?'WARNING':'NOMINAL';
+  set('mgiTx',d.expenses.length.toString());
+  set('mgiSrc',d.incomeRows.length.toString());
+  set('mgiDay',dayNum+'/'+daysIn);
+  const se=document.getElementById('mgiStatus');
+  se.style.color=usedPct>100?'var(--red)':usedPct>80?'var(--amber)':'var(--green)';
+  se.textContent=usedPct>100?'OVERLOAD':usedPct>80?'WARNING':'NOMINAL';
   ['N','W','G','C'].forEach(code=>{
     const v=d.budgetData[code],pct=v&&v.budgeted>0?Math.round((v.actual/v.budgeted)*100):0;
     const over=v&&v.actual>v.budgeted,rem=(v&&v.budgeted||0)-(v&&v.actual||0);
     const cv={N:'need',W:'want',G:'goal',C:'charity'}[code];
-    const col=over?'var(--red)':'var(--'+cv+')';
-    setGauge('g-'+code,'gp-'+code,pct,col,C_SM);
+    setGauge('g-'+code,'gp-'+code,pct,over?'var(--red)':'var(--'+cv+')',C_SM);
     const le=document.getElementById('gl-'+code);
-    le.textContent=over?'? '+fmt(Math.abs(rem))+' over':fmt(rem)+' left';
+    le.textContent=over?'⚠ '+fmt(Math.abs(rem))+' over':fmt(rem)+' left';
     le.className='gauge-left'+(over?' gauge-over':'');
   });
   renderRecentTx(d.expenses);
+  renderAllocCard(d.totalIncome, spent, getMonth());
+  if(document.getElementById('tab-debts').classList.contains('active'))renderDebts();
   window._dashData=d;
+  window._adjBal=adjBal;
+  window._unpaidIN=unpaidIN;
+  window._unpaidOUT=unpaidOUT;
 }
 function setGauge(fillId,pctId,pct,color,circ){
   const c=Math.min(pct,100),d=(c/100)*circ;
@@ -597,22 +762,133 @@ function setGauge(fillId,pctId,pct,color,circ){
 // HIDDEN PANEL
 function openPanel(){
   if(!data&&!window._dashData){toast('No data loaded yet','e');return;}
-  const d=window._dashData||data;
-  const inc=d.totalIncome,spent=Object.values(d.budgetData).reduce((s,v)=>s+(v.actual||0),0),bal=d.actualBalance;
-  const savePct=inc>0?Math.round((bal/inc)*100):0;
+  const d   = window._dashData||data;
+  const inc = d.totalIncome;
+  const spent = Object.values(d.budgetData).reduce((s,v)=>s+(v.actual||0),0);
+  const bal   = d.actualBalance;
+  const savePct = inc>0?Math.round((bal/inc)*100):0;
   const cc={N:'#00c9ff',W:'#ffab40',G:'#00ff94',C:'#b39ddb'};
   const cn={N:'Needs (40%)',W:'Wants (30%)',G:'Goals (12%)',C:'Charitable (18%)'};
-  const catR=Object.entries(d.budgetData).map(([code,v])=>{
+
+  // IN = you borrowed → reduces balance. OUT = you lent → adds to balance
+  const owedMe  = debts.filter(x=>x.direction==='out'&&!x.paid).reduce((s,x)=>s+x.amount,0);
+  const iOwe    = debts.filter(x=>x.direction==='in' &&!x.paid).reduce((s,x)=>s+x.amount,0);
+  const adjBal  = bal - iOwe + owedMe;
+
+  const debtSection = `
+    <div class="panel-sec">Debt Impact on Budget</div>
+    <div class="panel-row"><div class="pr-left"><div class="pr-label" style="color:var(--red)">IN — You Borrowed</div><div class="pr-sub">Must repay · reduces your balance · ${debts.filter(x=>x.direction==='in'&&!x.paid).length} unpaid</div></div><div class="pr-right"><div class="pr-amount" style="color:var(--red)">-${fmt(iOwe)} TZS</div></div></div>
+    <div class="panel-row"><div class="pr-left"><div class="pr-label" style="color:var(--green)">OUT — You Lent</div><div class="pr-sub">Coming back to you · adds to your balance · ${debts.filter(x=>x.direction==='out'&&!x.paid).length} unpaid</div></div><div class="pr-right"><div class="pr-amount" style="color:var(--green)">+${fmt(owedMe)} TZS</div></div></div>
+    <div class="panel-row" style="background:rgba(0,201,255,.07)"><div class="pr-left"><div class="pr-label" style="color:var(--cyan)">True Balance (with debts)</div><div class="pr-sub">Balance ${fmt(bal)}${iOwe>0?' − IN '+fmt(iOwe):''}${owedMe>0?' + OUT '+fmt(owedMe):''}</div></div><div class="pr-right"><div class="pr-amount" style="color:${adjBal>=0?'var(--cyan)':'var(--red)'}">${adjBal>=0?'':'-'}${fmt(Math.abs(adjBal))} TZS</div></div></div>
+  `;
+
+  const catR = Object.entries(d.budgetData).map(([code,v])=>{
     const pct=v.budgeted>0?Math.round((v.actual/v.budgeted)*100):0,over=v.actual>v.budgeted,rem=v.budgeted-v.actual,bw=Math.min(pct,100);
     return '<div class="panel-row flash-in"><div class="pr-left"><div class="pr-label" style="color:'+cc[code]+'">'+cn[code]+'</div><div class="pr-sub">Spent: '+fmt(v.actual)+' TZS</div></div><div class="pr-right"><div class="pr-amount" style="color:'+(over?'var(--red)':cc[code])+'">'+fmt(Math.abs(rem))+' '+(over?'over':'left')+'</div><div class="pr-pct">'+pct+'% of '+fmt(v.budgeted)+'</div><div class="pr-bar"><div class="pr-fill" style="width:'+bw+'%;background:'+(over?'var(--red)':cc[code])+'"></div></div></div></div>';
   }).join('');
-  document.getElementById('panelBody').innerHTML='<div class="panel-sec">Core Figures</div><div class="panel-row flash-in"><div class="pr-left"><div class="pr-label" style="color:var(--green)">Total Income</div><div class="pr-sub">'+d.incomeRows.length+' source'+(d.incomeRows.length!==1?'s':'')+'</div></div><div class="pr-right"><div class="pr-amount" style="color:var(--green)">'+fmt(inc)+' TZS</div></div></div><div class="panel-row"><div class="pr-left"><div class="pr-label" style="color:var(--red)">Total Spent</div><div class="pr-sub">'+d.expenses.length+' transactions</div></div><div class="pr-right"><div class="pr-amount" style="color:var(--red)">'+fmt(spent)+' TZS</div><div class="pr-pct">'+(inc>0?Math.round((spent/inc)*100):0)+'% of income</div></div></div><div class="panel-row"><div class="pr-left"><div class="pr-label" style="color:'+(bal>=0?'var(--cyan)':'var(--red)')+'">Remaining Balance</div><div class="pr-sub">Saved '+savePct+'%</div></div><div class="pr-right"><div class="pr-amount" style="color:'+(bal>=0?'var(--cyan)':'var(--red)')+'">'+fmt(bal)+' TZS</div></div></div><div class="panel-sec">Category Breakdown</div>'+catR;
+
+  document.getElementById('panelBody').innerHTML =
+    '<div class="panel-sec">Core Figures</div>' +
+    '<div class="panel-row flash-in"><div class="pr-left"><div class="pr-label" style="color:var(--green)">Total Income</div><div class="pr-sub">'+d.incomeRows.length+' source'+(d.incomeRows.length!==1?'s':'')+'</div></div><div class="pr-right"><div class="pr-amount" style="color:var(--green)">'+fmt(inc)+' TZS</div></div></div>' +
+    '<div class="panel-row"><div class="pr-left"><div class="pr-label" style="color:var(--red)">Total Spent</div><div class="pr-sub">'+d.expenses.length+' transactions</div></div><div class="pr-right"><div class="pr-amount" style="color:var(--red)">'+fmt(spent)+' TZS</div><div class="pr-pct">'+(inc>0?Math.round((spent/inc)*100):0)+'% of income</div></div></div>' +
+    '<div class="panel-row"><div class="pr-left"><div class="pr-label" style="color:'+(bal>=0?'var(--cyan)':'var(--red)')+'">Balance (before debts)</div><div class="pr-sub">Saved '+savePct+'%</div></div><div class="pr-right"><div class="pr-amount" style="color:'+(bal>=0?'var(--cyan)':'var(--red)')+'">'+fmt(bal)+' TZS</div></div></div>' +
+    '<div class="panel-sec">Category Breakdown</div>' + catR + debtSection;
+
   document.getElementById('panelOverlay').classList.add('open');
 }
 function closePanelOnBg(e){if(e.target===document.getElementById('panelOverlay'))closePanel();}
 function closePanel(){document.getElementById('panelOverlay').classList.remove('open');}
 
 // TRANSACTIONS
+// ── ALLOCATION EFFICIENCY ─────────────────────────────
+function renderAllocCard(income, spent, month) {
+  if (!income || income === 0) return;
+  const pct      = Math.min(Math.round((spent / income) * 100), 100);
+  const unalloc  = Math.max(income - spent, 0);
+  const unalPct  = 100 - pct;
+
+  // Color logic: 95-100% = green (efficient), 80-95% = amber, <80% = red
+  const color = pct >= 95 ? 'var(--goal)' : pct >= 80 ? 'var(--want)' : 'var(--red)';
+
+  // Bar
+  const spentEl   = document.getElementById('allocBarSpent');
+  const unallocEl = document.getElementById('allocBarUnalloc');
+  const dotEl     = document.getElementById('allocDotSpent');
+  if (spentEl) {
+    spentEl.style.width      = pct + '%';
+    spentEl.style.background = color;
+  }
+  if (unallocEl) {
+    unallocEl.style.width      = unalPct + '%';
+    unallocEl.style.background = unalloc > 0 ? 'rgba(255,171,64,.35)' : 'transparent';
+  }
+  if (dotEl) dotEl.style.background = color;
+
+  // Labels
+  const lSpent   = document.getElementById('allocLabelSpent');
+  const lUnalloc = document.getElementById('allocLabelUnalloc');
+  if (lSpent)   lSpent.textContent   = pct + '% allocated (' + fmt(spent) + ')';
+  if (lUnalloc) lUnalloc.textContent = unalPct + '% unallocated (' + fmt(unalloc) + ')';
+  lUnalloc.style.color = unalloc > 0 ? 'var(--want)' : 'var(--muted)';
+
+  // Suggestion box
+  const sugEl = document.getElementById('allocSuggestion');
+  if (sugEl) {
+    if (unalloc > 0) {
+      sugEl.innerHTML =
+        '<div class="alloc-suggestion alloc-sug-goal" onclick="switchToGoalSuggestion(' + unalloc + ')">' +
+        '🎯 Move ' + fmt(unalloc) + ' TZS to Goals — reach 100% efficiency' +
+        '</div>';
+    } else if (pct === 100) {
+      sugEl.innerHTML = '<div class="alloc-suggestion alloc-sug-full">✅ 100% allocated — maximum efficiency!</div>';
+    } else {
+      sugEl.innerHTML = '';
+    }
+  }
+
+  // Save to monthly history in localStorage
+  const histKey  = 'bgt_alloc_hist';
+  const hist     = JSON.parse(localStorage.getItem(histKey) || '{}');
+  hist[month]    = { income, spent, pct, unalloc };
+  localStorage.setItem(histKey, JSON.stringify(hist));
+
+  // Render history rows (last 6 months)
+  const histEl = document.getElementById('allocHist');
+  const rowsEl = document.getElementById('allocHistRows');
+  if (histEl && rowsEl) {
+    const allMonths = MONTHS.filter(m => hist[m]);
+    if (allMonths.length > 1) {
+      histEl.style.display = '';
+      rowsEl.innerHTML = allMonths.slice(-6).reverse().map(m => {
+        const h    = hist[m];
+        const hPct = Math.min(h.pct, 100);
+        const hCol = h.pct >= 95 ? 'var(--goal)' : h.pct >= 80 ? 'var(--want)' : 'var(--red)';
+        const unA  = h.unalloc > 0
+          ? ' <span style="color:var(--want);font-size:.62rem">+' + fmt(h.unalloc) + ' unalloc</span>'
+          : ' <span style="color:var(--goal);font-size:.62rem">✓ full</span>';
+        return '<div class="alloc-hist-row">' +
+          '<span class="alloc-hist-month">' + m + '</span>' +
+          '<div class="alloc-hist-bar"><div class="alloc-hist-fill" style="width:' + hPct + '%;background:' + hCol + '"></div></div>' +
+          '<span class="alloc-hist-pct" style="color:' + hCol + '">' + h.pct + '%</span>' +
+          unA +
+          '</div>';
+      }).join('');
+    } else {
+      histEl.style.display = 'none';
+    }
+  }
+}
+
+// Quick action: jump to Add Entry pre-selecting Goal category
+function switchToGoalSuggestion(amount) {
+  switchTab('add', document.querySelector('.nav-btn:nth-child(2)'));
+  setType('expense');
+  document.querySelectorAll('#frmExpense .cat-btn').forEach(b => b.classList.toggle('sel', b.dataset.cat === 'G'));
+  selCat = 'G';
+  setFmtVal('eAmount', amount);
+  toast('Allocating ' + fmt(amount) + ' to Goals 🎯', 'i');
+}
+
 function renderRecentTx(exps){if(!exps||!exps.length){document.getElementById('recentTx').innerHTML='<div class="empty"><div class="eico">&#10024;</div><p>No transactions yet</p></div>';return;}document.getElementById('recentTx').innerHTML=[...exps].reverse().slice(0,8).map(tx=>txHtml(tx,false)).join('');}
 function txHtml(tx,showActions=true){
   const c=CAT[tx.category]||{emoji:'&#128204;',color:'#4a6b8a',bg:'rgba(255,255,255,.05)',name:tx.category||'--'};
@@ -762,6 +1038,206 @@ function appendLoadingMsg(){const id=++lid;const el=document.createElement('div'
 function removeLoadingMsg(id){const el=document.getElementById('aiL'+id);if(el)el.remove();}
 function scrollAi(){const m=document.getElementById('aiMessages');setTimeout(()=>{m.scrollTop=m.scrollHeight;},40);}
 function fmtAi(t){return esc(t).replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\*(.*?)\*/g,'<em>$1</em>').replace(/\n/g,'<br>');}
+
+// ════════════════════════════════════════════════════════
+// DEBTS
+// ════════════════════════════════════════════════════════
+let debtDir    = 'in';   // 'in' = they owe me, 'out' = I owe them
+let debtFilter = 'all';
+let debtFormOpen = false;
+
+// Render all debts for the current month
+function renderDebts() {
+  const debts = (data && data.debts) ? data.debts : [];
+
+  // IN  = you borrowed → you owe → reduces your budget → RED
+  // OUT = you lent     → they owe you → adds to your budget → GREEN
+  const youOwe    = debts.filter(d => d.direction === 'in'  && !d.paid).reduce((s,d) => s+d.amount, 0);
+  const owedToYou = debts.filter(d => d.direction === 'out' && !d.paid).reduce((s,d) => s+d.amount, 0);
+  const net       = owedToYou - youOwe;  // positive = you're net owed
+
+  set('debtOwedMe', fmt(owedToYou));  // GREEN card = OUT debts (they owe you)
+  set('debtIOwed',  fmt(youOwe));     // RED card   = IN debts  (you owe)
+
+  const netEl = document.getElementById('debtNet');
+  if (netEl) {
+    netEl.textContent = (net >= 0 ? '+' : '') + fmt(net);
+    netEl.style.color = net >= 0 ? 'var(--green)' : 'var(--red)';
+  }
+
+  renderDebtList(debts);
+}
+
+function renderDebtList(debts) {
+  const list = document.getElementById('debtList');
+  if (!debts || !debts.length) {
+    list.innerHTML = '<div class="empty"><div class="eico">🤝</div><p>No debts recorded for this month.</p></div>';
+    return;
+  }
+
+  let filtered = debts;
+  if (debtFilter === 'in')     filtered = debts.filter(d => d.direction === 'in');
+  if (debtFilter === 'out')    filtered = debts.filter(d => d.direction === 'out');
+  if (debtFilter === 'unpaid') filtered = debts.filter(d => !d.paid);
+  if (debtFilter === 'paid')   filtered = debts.filter(d =>  d.paid);
+
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty"><div class="eico">🔍</div><p>No entries match this filter.</p></div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map(d => {
+    const isIn    = d.direction === 'in';
+    // IN  = money came IN to you (you borrowed) → you owe it back → RED
+    // OUT = money went OUT from you (you lent)  → they owe you   → GREEN
+    const dirLabel = isIn ? 'IN' : 'OUT';
+    const dirClass = isIn ? 'in' : 'out';          // CSS: .in=red, .out=green
+    const dirTip   = isIn ? '→ you owe (borrowed)' : '← they owe you (lent)';
+    const amtColor = isIn ? 'var(--red)' : 'var(--green)';
+    const paidClass = d.paid ? 'paid-badge' : 'unpaid';
+    const paidLabel = d.paid ? '✓ Cleared' : '⏳ Pending';
+    const itemClass = d.paid ? 'debt-item paid' : 'debt-item';
+
+    return `<div class="${itemClass}">
+      <div class="debt-dir ${dirClass}">${dirLabel}</div>
+      <div class="debt-info">
+        <div class="debt-name ${d.paid ? 'paid-name' : ''}">${esc(d.person)}</div>
+        <div class="debt-meta">${dirTip}${d.comment ? ' · ' + esc(d.comment) : ''}</div>
+      </div>
+      <div class="debt-right">
+        <div class="debt-amount" style="color:${amtColor}">${isIn ? '-' : '+'}${fmt(d.amount)}</div>
+        <span class="debt-status ${paidClass}">${paidLabel}</span>
+        <div class="debt-actions">
+          ${!d.paid
+            ? `<button class="debt-btn pay-btn" onclick="toggleDebtPaid(${d.row},'${getMonth()}',true)">Clear</button>`
+            : `<button class="debt-btn" onclick="toggleDebtPaid(${d.row},'${getMonth()}',false)">Undo</button>`}
+          <button class="debt-btn" onclick="openDebtEdit(${d.row},'${esc(d.person)}','${d.direction}',${d.amount},'${esc(d.comment||'')}','${getMonth()}')">✏️</button>
+          <button class="debt-btn" style="color:var(--red)" onclick="confirmDebtDelete(${d.row},'${esc(d.person)}','${getMonth()}')">🗑️</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterDebts(btn) {
+  document.querySelectorAll('.debt-filter-row .chip').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  debtFilter = btn.dataset.df;
+  renderDebts();
+}
+
+// Add form toggle
+function toggleDebtForm() {
+  debtFormOpen = !debtFormOpen;
+  document.getElementById('debtAddForm').style.display   = debtFormOpen ? '' : 'none';
+  document.getElementById('debtAddToggle').textContent = debtFormOpen ? '✕ Cancel' : '+ Record a new debt';
+}
+
+function setDebtDir(dir) {
+  debtDir = dir;
+  document.getElementById('dirInBtn').className  = 'dir-btn' + (dir === 'in'  ? ' active-in'  : '');
+  document.getElementById('dirOutBtn').className = 'dir-btn' + (dir === 'out' ? ' active-out' : '');
+}
+
+// Submit new debt
+async function submitDebt() {
+  const person  = document.getElementById('dPerson').value.trim();
+  const amount  = getRaw('dAmount');
+  const comment = document.getElementById('dComment').value.trim();
+  const month   = document.getElementById('dMonth').value || getMonth();
+
+  if (!person || !amount) { toast('Person and amount are required', 'e'); return; }
+  if (!API) { toast('Configure API URL first', 'e'); openSettings(); return; }
+
+  const btn = document.getElementById('btnAddDebt');
+  btn.disabled = true; btn.textContent = 'Saving…';
+
+  try {
+    const p = new URLSearchParams({ action:'addDebt', person, direction:debtDir, amount, comment, month });
+    const d = await (await fetch(`${API}?${p}`)).json();
+    if (d.error) { toast('Error: ' + d.error, 'e'); }
+    else {
+      toast(`✓ Debt recorded in ${d.month}!`, 's');
+      document.getElementById('dPerson').value  = '';
+      document.getElementById('dAmount').value  = '';
+      document.getElementById('dAmount').dataset.raw = '';
+      document.getElementById('dComment').value = '';
+      toggleDebtForm();
+      if (d.month === getMonth()) { await loadData(); renderDebts(); }
+    }
+  } catch(e) { toast('Network error', 'e'); }
+  finally    { btn.disabled = false; btn.textContent = 'Save Debt Record'; }
+}
+
+// Mark paid / undo
+async function toggleDebtPaid(row, month, paid) {
+  if (!API) { toast('Configure API first', 'e'); return; }
+  try {
+    const d = await (await fetch(`${API}?` + new URLSearchParams({ action:'editDebt', row, month, paid: paid ? 'y' : 'n' }))).json();
+    if (d.error) { toast('Error: ' + d.error, 'e'); }
+    else {
+      // Optimistic local update
+      if (data && data.debts) {
+        const debt = data.debts.find(x => x.row === row);
+        if (debt) debt.paid = paid;
+        localStorage.setItem('bgt_cache_' + month, JSON.stringify(data));
+      }
+      toast(paid ? '✓ Marked as paid!' : 'Marked as unpaid', 's');
+      renderDebts();
+    }
+  } catch(e) { toast('Network error', 'e'); }
+}
+
+// Edit debt — reuses the same inline form in a pre-filled state
+function openDebtEdit(row, person, direction, amount, comment, month) {
+  // Open form and pre-fill
+  if (!debtFormOpen) toggleDebtForm();
+  setDebtDir(direction);
+  document.getElementById('dPerson').value   = person;
+  setFmtVal('dAmount', amount);
+  document.getElementById('dComment').value  = comment;
+  document.getElementById('dMonth').value    = month;
+
+  // Swap button to "Update"
+  const btn = document.getElementById('btnAddDebt');
+  btn.textContent = 'Update Debt';
+  btn.onclick     = async function() {
+    const newPerson  = document.getElementById('dPerson').value.trim();
+    const newAmount  = getRaw('dAmount');
+    const newComment = document.getElementById('dComment').value.trim();
+    const newMonth   = document.getElementById('dMonth').value || getMonth();
+    if (!newPerson || !newAmount) { toast('Person and amount required', 'e'); return; }
+    btn.disabled = true; btn.textContent = 'Saving…';
+    try {
+      const p = new URLSearchParams({ action:'editDebt', row, person:newPerson, direction:debtDir, amount:newAmount, comment:newComment, month:newMonth, paid: 'n' });
+      const d = await (await fetch(`${API}?${p}`)).json();
+      if (d.error) { toast('Error: '+d.error, 'e'); }
+      else { toast('✓ Debt updated!', 's'); toggleDebtForm(); await loadData(); renderDebts(); }
+    } catch(e) { toast('Network error', 'e'); }
+    finally {
+      btn.disabled = false; btn.textContent = 'Save Debt Record';
+      btn.onclick  = submitDebt; // restore
+    }
+  };
+}
+
+// Delete debt — instant local remove then server call
+async function confirmDebtDelete(row, person, month) {
+  if (!confirm(`Delete debt record for "${person}"?`)) return;
+  if (!API) { toast('Configure API first', 'e'); return; }
+
+  // Instant local remove
+  if (data && data.debts) {
+    data.debts = data.debts.filter(d => d.row !== row);
+    localStorage.setItem('bgt_cache_' + month, JSON.stringify(data));
+    renderDebts();
+  }
+  toast('Debt removed', 's');
+
+  try {
+    await fetch(`${API}?` + new URLSearchParams({ action:'deleteDebt', row, month }));
+  } catch(e) { /* fire and forget */ }
+}
 
 // COMMA INPUTS
 function fmtInput(el){const r=el.value.replace(/[^0-9]/g,'');el.dataset.raw=r;el.value=r?parseInt(r,10).toLocaleString():'';}
