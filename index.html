@@ -770,10 +770,11 @@ function openPanel(){
   const cc={N:'#00c9ff',W:'#ffab40',G:'#00ff94',C:'#b39ddb'};
   const cn={N:'Needs (40%)',W:'Wants (30%)',G:'Goals (12%)',C:'Charitable (18%)'};
 
-  // IN = you borrowed → reduces balance. OUT = you lent → adds to balance
-  const owedMe  = debts.filter(x=>x.direction==='out'&&!x.paid).reduce((s,x)=>s+x.amount,0);
-  const iOwe    = debts.filter(x=>x.direction==='in' &&!x.paid).reduce((s,x)=>s+x.amount,0);
-  const adjBal  = bal - iOwe + owedMe;
+  // Pull debt records from loaded data
+  const debts  = d.debts || [];
+  const owedMe = debts.filter(x=>x.direction==='out'&&!x.paid).reduce((s,x)=>s+x.amount,0);
+  const iOwe   = debts.filter(x=>x.direction==='in' &&!x.paid).reduce((s,x)=>s+x.amount,0);
+  const adjBal = bal - iOwe + owedMe;
 
   const debtSection = `
     <div class="panel-sec">Debt Impact on Budget</div>
