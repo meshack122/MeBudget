@@ -684,7 +684,8 @@ function renderDashboard(d){
   const unpaidIN  = d.unpaidIN  || debts.filter(x=>x.direction==='in' &&!x.paid).reduce((s,x)=>s+x.amount,0);
   const unpaidOUT = d.unpaidOUT || debts.filter(x=>x.direction==='out'&&!x.paid).reduce((s,x)=>s+x.amount,0);
   // IN = they owe you → adds to balance. OUT = you owe them → reduces balance
-  const adjBal  = (d.debtAdjustedBalance!==undefined) ? d.debtAdjustedBalance : (d.actualBalance + unpaidIN - unpaidOUT);
+  // Use trueBalance read directly from J12 in the sheet — the authoritative figure
+  const adjBal  = (d.trueBalance !== undefined) ? d.trueBalance : (d.actualBalance + unpaidIN - unpaidOUT);
   const usedPct= Math.round((spent/inc)*100);
   const today  = new Date(),daysIn=new Date(today.getFullYear(),today.getMonth()+1,0).getDate(),dayNum=today.getDate();
   const debtNote = debts.filter(x=>!x.paid).length ? ` · ${debts.filter(x=>!x.paid).length} pending debt(s)` : '';
@@ -735,13 +736,14 @@ function openPanel(){
   // IN = they owe you → adds to balance (GREEN). OUT = you owe them → reduces balance (RED)
   const owedMe = debts.filter(x=>x.direction==='in' &&!x.paid).reduce((s,x)=>s+x.amount,0);
   const iOwe   = debts.filter(x=>x.direction==='out'&&!x.paid).reduce((s,x)=>s+x.amount,0);
-  const adjBal = bal + owedMe - iOwe;
+  // Use trueBalance from J12 if available; fallback to local calculation
+  const adjBal = (d.trueBalance !== undefined) ? d.trueBalance : (bal + owedMe - iOwe);
 
   const debtSection = `
     <div class="panel-sec">Debt Impact on Budget</div>
     <div class="panel-row"><div class="pr-left"><div class="pr-label" style="color:var(--green)">IN — They Owe You</div><div class="pr-sub">Expected to receive · adds to your balance · ${debts.filter(x=>x.direction==='in'&&!x.paid).length} unpaid</div></div><div class="pr-right"><div class="pr-amount" style="color:var(--green)">+${fmt(owedMe)} TZS</div></div></div>
     <div class="panel-row"><div class="pr-left"><div class="pr-label" style="color:var(--red)">OUT — You Owe</div><div class="pr-sub">Must repay · reduces your balance · ${debts.filter(x=>x.direction==='out'&&!x.paid).length} unpaid</div></div><div class="pr-right"><div class="pr-amount" style="color:var(--red)">-${fmt(iOwe)} TZS</div></div></div>
-    <div class="panel-row" style="background:rgba(0,201,255,.07)"><div class="pr-left"><div class="pr-label" style="color:var(--cyan)">True Balance (with debts)</div><div class="pr-sub">Balance ${fmt(bal)}${owedMe>0?' + IN '+fmt(owedMe):''}${iOwe>0?' − OUT '+fmt(iOwe):''}</div></div><div class="pr-right"><div class="pr-amount" style="color:${adjBal>=0?'var(--cyan)':'var(--red)'}">${adjBal>=0?'':'-'}${fmt(Math.abs(adjBal))} TZS</div></div></div>
+    <div class="panel-row" style="background:rgba(0,201,255,.07)"><div class="pr-left"><div class="pr-label" style="color:var(--cyan)">True Balance (J12 — incl. debts)</div><div class="pr-sub">Read directly from sheet cell J12</div></div><div class="pr-right"><div class="pr-amount" style="color:${adjBal>=0?'var(--cyan)':'var(--red)'}">${adjBal>=0?'':'-'}${fmt(Math.abs(adjBal))} TZS</div></div></div>
   `;
 
   const catR = Object.entries(d.budgetData).map(([code,v])=>{
@@ -893,7 +895,7 @@ async function sendAiMessage(){
   input.value='';appendUserMsg(text);const lid=appendLoadingMsg();document.getElementById('aiSendBtn').disabled=true;
   try{
     let ctx='No financial data loaded.';
-    if(data){const spent=Object.values(data.budgetData).reduce((s,v)=>s+(v.actual||0),0),inc=data.totalIncome,today=new Date(),di=new Date(today.getFullYear(),today.getMonth()+1,0).getDate(),dn=today.getDate();ctx='Month: '+getMonth()+' (Day '+dn+' of '+di+', '+( di-dn)+' remaining)\nIncome: '+inc+' TZS\nSpent: '+spent+' TZS\nBalance: '+data.actualBalance+' TZS\nSavings: '+(inc>0?Math.round((data.actualBalance/inc)*100):0)+'%\nDaily rate: '+(dn>0?Math.round(spent/dn):0)+' TZS/day\nProjected: '+Math.round((spent/Math.max(dn,1))*di)+' TZS\n\nCategories:\n'+Object.entries(data.budgetData).map(([k,v])=>'  '+v.name+': '+v.actual+'/'+v.budgeted+' TZS ('+( v.budgeted>0?Math.round((v.actual/v.budgeted)*100):0)+'%)').join('\n')+'\n\nTop expenses:\n'+[...data.expenses].sort((a,b)=>b.amount-a.amount).slice(0,5).map(e=>'  '+e.source+' ('+( CAT[e.category]?.name||e.category)+'): '+e.amount+' TZS').join('\n');}
+    if(data){const spent=Object.values(data.budgetData).reduce((s,v)=>s+(v.actual||0),0),inc=data.totalIncome,today=new Date(),di=new Date(today.getFullYear(),today.getMonth()+1,0).getDate(),dn=today.getDate();ctx='Month: '+getMonth()+' (Day '+dn+' of '+di+', '+( di-dn)+' remaining)\nIncome: '+inc+' TZS\nSpent: '+spent+' TZS\nBalance (excl. debts): '+data.actualBalance+' TZS\nTrue Balance (incl. debts): '+(data.trueBalance||data.actualBalance)+' TZS\nSavings: '+(inc>0?Math.round(((data.trueBalance||data.actualBalance)/inc)*100):0)+'%\nDaily rate: '+(dn>0?Math.round(spent/dn):0)+' TZS/day\nProjected: '+Math.round((spent/Math.max(dn,1))*di)+' TZS\n\nCategories:\n'+Object.entries(data.budgetData).map(([k,v])=>'  '+v.name+': '+v.actual+'/'+v.budgeted+' TZS ('+( v.budgeted>0?Math.round((v.actual/v.budgeted)*100):0)+'%)').join('\n')+'\n\nTop expenses:\n'+[...data.expenses].sort((a,b)=>b.amount-a.amount).slice(0,5).map(e=>'  '+e.source+' ('+( CAT[e.category]?.name||e.category)+'): '+e.amount+' TZS').join('\n');}
     const sys='You are Meshack budget advisor in Tanzania (TZS). Budget: 40% Needs, 30% Wants, 12% Goals, 18% Charitable.\n\nData:\n'+ctx+'\n\nBe friendly, direct, concise. Use **bold** for key figures. Format as K/M. Max 250 words.';
     const msgs=[{role:'system',content:sys},...aiChatHistory.slice(-8).map(m=>({role:m.role,content:m.content})),{role:'user',content:text}];
     const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY},body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:msgs,temperature:0.4,max_tokens:600})});
