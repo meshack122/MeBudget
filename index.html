@@ -3,6 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00c9ff">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Meshack 1.0">
+<link rel="apple-touch-icon" href="icons/icon-192x192.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152x152.png">
+<link rel="apple-touch-icon" sizes="144x144" href="icons/icon-144x144.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192x192.png">
+<link rel="shortcut icon" href="icons/icon-96x96.png">
 <title>Meshack · Budget</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -339,6 +352,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 Meshack
 </div>
 <div class="hdr-right">
+      <button id="installBtn" onclick="installApp()" title="Install App" style="display:none;width:34px;height:34px;border-radius:8px;background:rgba(0,201,255,.15);border:1px solid var(--cyan);cursor:pointer;align-items:center;justify-content:center;color:var(--cyan);font-size:1.1rem" title="Install MeBudget App">⬇️</button>
 <select class="month-select" id="monthSelect" onchange="loadData()">
 <option value="Jan">Jan</option><option value="Feb">Feb</option><option value="Mar">Mar</option><option value="Apr">Apr</option>
 <option value="May">May</option><option value="Jun">Jun</option><option value="Jul">Jul</option><option value="Aug">Aug</option>
@@ -1135,6 +1149,39 @@ function fmt(v){if(v===null||v===undefined)return '--';const n=parseFloat(v)||0;
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function set(id,v){const el=document.getElementById(id);if(el)el.textContent=v;}
 function toast(msg,type='i'){const t=document.getElementById('toast');t.textContent=msg;t.className='toast '+type+' show';setTimeout(()=>t.classList.remove('show'),3600);}
+
+// ── PWA Service Worker Registration ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .then(reg => console.log('Meshack 1.0 SW registered:', reg.scope))
+      .catch(err => console.warn('SW registration failed:', err));
+  });
+}
+
+// PWA install prompt
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // Show install button if present
+  const btn = document.getElementById('installBtn');
+  if (btn) btn.style.display = 'flex';
+});
+window.addEventListener('appinstalled', () => {
+  deferredPrompt = null;
+  const btn = document.getElementById('installBtn');
+  if (btn) btn.style.display = 'none';
+  toast('Meshack 1.0 installed! ✅', 'i');
+});
+function installApp() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(c => {
+      deferredPrompt = null;
+    });
+  }
+}
 </script>
 </body>
 </html>
