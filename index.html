@@ -652,12 +652,38 @@ function saveSettings(){
 // NOTIFICATIONS
 function loadNotifSettings(){['Morning','Afternoon','Evening'].forEach(n=>{const k=n.toLowerCase();document.getElementById('nt'+n).value=notifSettings[k].time;document.getElementById('tog'+n).classList.toggle('on',notifSettings[k].enabled);});}
 function toggleNotifTime(n){document.getElementById('tog'+n).classList.toggle('on');}
-async function requestNotifPermission(){if(!('Notification'in window)){toast('Not supported','e');return;}const p=await Notification.requestPermission();if(p==='granted'){document.getElementById('notifBanner').classList.add('hidden');toast('Notifications enabled!','s');scheduleNotifications();}else toast('Permission denied','e');}
+async function requestNotifPermission(){if(!('Notification'in window)){toast('Notifications not supported on this browser','e');return;}const p=await Notification.requestPermission();if(p==='granted'){document.getElementById('notifBanner').classList.add('hidden');toast('✅ Notifications enabled! You\'ll be reminded 3x daily.','s');scheduleNotifications();}else if(p==='denied'){toast('❌ Permission denied — enable in phone Settings → Notifications','e');}else{toast('Notification permission dismissed','e');}}
 function scheduleNotifications(){
-  if(!('Notification'in window)||Notification.permission!=='granted')return;
-  const msgs={morning:{title:'Good morning, Meshack!',body:'Have you logged expenses yet?'},afternoon:{title:'Afternoon check-in',body:'Log expenses from this morning.'},evening:{title:'Evening wrap-up',body:'End of day - log expenses and check balance!'}};
+  // 1. Send settings to service worker — fires even when app is CLOSED
+  const sendToSW = (reg) => {
+    const target = navigator.serviceWorker.controller || (reg && reg.active);
+    if(target) target.postMessage({type:'SAVE_NOTIF_SETTINGS', settings: notifSettings});
+  };
+  if('serviceWorker' in navigator){
+    if(navigator.serviceWorker.controller) sendToSW();
+    else navigator.serviceWorker.ready.then(reg => sendToSW(reg));
+  }
+  // 2. In-app fallback — also fires while app is open
   clearInterval(window._notifTimer);
-  window._notifTimer=setInterval(()=>{const now=new Date(),hhmm=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');if(now.getSeconds()>5)return;['morning','afternoon','evening'].forEach(slot=>{const s=notifSettings[slot];if(!s.enabled||s.time!==hhmm)return;const lk='bgt_notif_last_'+slot,td=now.toISOString().split('T')[0];if(localStorage.getItem(lk)===td)return;localStorage.setItem(lk,td);new Notification(msgs[slot].title,{body:msgs[slot].body,tag:'meshack_'+slot});});},10000);
+  if(!('Notification' in window) || Notification.permission !== 'granted') return;
+  window._notifTimer = setInterval(()=>{
+    const now=new Date(), hhmm=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+    if(now.getSeconds() > 25) return;
+    ['morning','afternoon','evening'].forEach(slot=>{
+      const s=notifSettings[slot];
+      if(!s.enabled || s.time !== hhmm) return;
+      const lk='bgt_notif_last_'+slot, td=now.toISOString().split('T')[0];
+      if(localStorage.getItem(lk) === td) return;
+      localStorage.setItem(lk, td);
+      new Notification(
+        slot==='morning' ? '🌅 Good morning, Meshack!' : slot==='afternoon' ? '☀️ Afternoon check-in' : '🌙 Evening wrap-up',
+        { body: slot==='morning' ? "Time to log last night's expenses. Keep the streak going! 💪"
+               : slot==='afternoon' ? "Have you logged your morning expenses? A minute now saves confusion later."
+               : "End of day — log today's expenses and check your balance.",
+          icon: '/MeBudget/icons/icon-192x192.png', tag:'meshack_'+slot, vibrate:[200,100,200] }
+      );
+    });
+  }, 20000);
 }
 
 // NAV
@@ -1154,7 +1180,16 @@ function toast(msg,type='i'){const t=document.getElementById('toast');t.textCont
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js')
-      .then(reg => console.log('Meshack 1.0 SW registered:', reg.scope))
+      .then(reg => {
+        console.log('Meshack 1.0 SW registered:', reg.scope);
+        // Push notification settings to SW immediately after registration
+        reg.ready.then(() => {
+          const saved = localStorage.getItem('bgt_notif');
+          if(saved && reg.active){
+            reg.active.postMessage({type:'SAVE_NOTIF_SETTINGS', settings: JSON.parse(saved)});
+          }
+        });
+      })
       .catch(err => console.warn('SW registration failed:', err));
   });
 }
