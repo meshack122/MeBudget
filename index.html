@@ -3,19 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<!-- PWA -->
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#00c9ff">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Meshack 1.0">
-<link rel="apple-touch-icon" href="icons/icon-192x192.png">
-<link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152x152.png">
-<link rel="apple-touch-icon" sizes="144x144" href="icons/icon-144x144.png">
-<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192x192.png">
-<link rel="shortcut icon" href="icons/icon-96x96.png">
 <title>Meshack · Budget</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -277,6 +264,28 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .card,.gauge-card,.main-gauge-card{transition:opacity .2s ease}
 .gauge-fill{transition:stroke-dasharray .6s cubic-bezier(.4,0,.2,1),stroke .4s ease}
 .mgi-v,.gauge-pct,.main-gauge-pct,.hdr-pct{transition:color .3s ease}
+/* ── Allocation tracker ────────────────────────────── */
+.alloc-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:13px}
+.alloc-bar-wrap{height:12px;background:rgba(255,255,255,.06);border-radius:6px;overflow:hidden;display:flex;margin:10px 0 6px}
+.alloc-bar-spent{height:100%;border-radius:6px 0 0 6px;transition:width .7s ease}
+.alloc-bar-unalloc{height:100%;border-radius:0 6px 6px 0;transition:width .7s ease}
+.alloc-row{display:flex;align-items:center;justify-content:space-between;font-size:.76rem;margin-bottom:3px}
+.alloc-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px}
+.alloc-labels{display:flex;gap:14px}
+.alloc-suggestion{margin-top:9px;padding:9px 12px;border-radius:9px;font-size:.78rem;font-weight:600;border:1px dashed;display:flex;align-items:center;gap:8px;cursor:pointer;transition:all .2s}
+.alloc-sug-goal{border-color:rgba(0,255,148,.4);background:rgba(0,255,148,.06);color:var(--green)}
+.alloc-sug-goal:hover{background:rgba(0,255,148,.14)}
+.alloc-sug-full{border-color:rgba(0,201,255,.3);background:rgba(0,201,255,.05);color:var(--cyan)}
+.alloc-sug-over{border-color:rgba(255,69,96,.35);background:rgba(255,69,96,.07);color:var(--red)}
+/* Month allocation history */
+.alloc-hist{margin-top:10px;border-top:1px solid rgba(255,255,255,.06);padding-top:10px}
+.alloc-hist-title{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:8px}
+.alloc-hist-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:.75rem}
+.alloc-hist-month{width:30px;font-weight:700;color:var(--muted);flex-shrink:0}
+.alloc-hist-bar{flex:1;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden}
+.alloc-hist-fill{height:100%;border-radius:3px;transition:width .5s ease}
+.alloc-hist-pct{width:36px;text-align:right;font-weight:700;flex-shrink:0}
+.alloc-hist-amt{font-size:.68rem;color:var(--muted);flex-shrink:0;width:60px;text-align:right}
 @media(max-width:360px){.cat-grid{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
@@ -352,7 +361,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 Meshack
 </div>
 <div class="hdr-right">
-      <button id="installBtn" onclick="installApp()" title="Install App" style="display:none;width:34px;height:34px;border-radius:8px;background:rgba(0,201,255,.15);border:1px solid var(--cyan);cursor:pointer;align-items:center;justify-content:center;color:var(--cyan);font-size:1.1rem" title="Install MeBudget App">⬇️</button>
 <select class="month-select" id="monthSelect" onchange="loadData()">
 <option value="Jan">Jan</option><option value="Feb">Feb</option><option value="Mar">Mar</option><option value="Apr">Apr</option>
 <option value="May">May</option><option value="Jun">Jun</option><option value="Jul">Jul</option><option value="Aug">Aug</option>
@@ -396,18 +404,42 @@ Meshack
 
 <!-- Category gauges -->
 <div class="gauges-grid">
-<div class="gauge-card" style="--g-color:var(--need)">
+<div class="gauge-card" id="gauge-N" style="--g-color:var(--need)">
 <div class="gauge-wrap"><svg viewBox="0 0 78 78"><circle cx="39" cy="39" r="31" class="gauge-track"/><circle cx="39" cy="39" r="31" class="gauge-fill" stroke="var(--need)" id="g-N" stroke-dasharray="0 194.8" stroke-linecap="round"/></svg><div class="gauge-center"><div class="gauge-pct" id="gp-N" style="color:var(--need)">--</div><div class="gauge-emoji">&#127968;</div></div></div>
-<div class="gauge-label">Needs</div><div class="gauge-left" id="gl-N">--</div></div>
-<div class="gauge-card" style="--g-color:var(--want)">
+<div class="gauge-label" id="glabel-N">Needs</div><div class="gauge-left" id="gl-N">--</div></div>
+<div class="gauge-card" id="gauge-W" style="--g-color:var(--want)">
 <div class="gauge-wrap"><svg viewBox="0 0 78 78"><circle cx="39" cy="39" r="31" class="gauge-track"/><circle cx="39" cy="39" r="31" class="gauge-fill" stroke="var(--want)" id="g-W" stroke-dasharray="0 194.8" stroke-linecap="round"/></svg><div class="gauge-center"><div class="gauge-pct" id="gp-W" style="color:var(--want)">--</div><div class="gauge-emoji">&#128717;</div></div></div>
-<div class="gauge-label">Wants</div><div class="gauge-left" id="gl-W">--</div></div>
-<div class="gauge-card" style="--g-color:var(--goal)">
+<div class="gauge-label" id="glabel-W">Wants</div><div class="gauge-left" id="gl-W">--</div></div>
+<div class="gauge-card" id="gauge-G" style="--g-color:var(--goal)">
 <div class="gauge-wrap"><svg viewBox="0 0 78 78"><circle cx="39" cy="39" r="31" class="gauge-track"/><circle cx="39" cy="39" r="31" class="gauge-fill" stroke="var(--goal)" id="g-G" stroke-dasharray="0 194.8" stroke-linecap="round"/></svg><div class="gauge-center"><div class="gauge-pct" id="gp-G" style="color:var(--goal)">--</div><div class="gauge-emoji">&#127919;</div></div></div>
-<div class="gauge-label">Goals</div><div class="gauge-left" id="gl-G">--</div></div>
-<div class="gauge-card" style="--g-color:var(--charity)">
+<div class="gauge-label" id="glabel-G">Goals</div><div class="gauge-left" id="gl-G">--</div></div>
+<div class="gauge-card" id="gauge-C" style="--g-color:var(--charity)">
 <div class="gauge-wrap"><svg viewBox="0 0 78 78"><circle cx="39" cy="39" r="31" class="gauge-track"/><circle cx="39" cy="39" r="31" class="gauge-fill" stroke="var(--charity)" id="g-C" stroke-dasharray="0 194.8" stroke-linecap="round"/></svg><div class="gauge-center"><div class="gauge-pct" id="gp-C" style="color:var(--charity)">--</div><div class="gauge-emoji">&#128153;</div></div></div>
-<div class="gauge-label">Charitable</div><div class="gauge-left" id="gl-C">--</div></div>
+<div class="gauge-label" id="glabel-C">Charitable</div><div class="gauge-left" id="gl-C">--</div></div>
+<div class="gauge-card" id="gauge-D" style="--g-color:var(--amber)">
+<div class="gauge-wrap"><svg viewBox="0 0 78 78"><circle cx="39" cy="39" r="31" class="gauge-track"/><circle cx="39" cy="39" r="31" class="gauge-fill" stroke="var(--amber)" id="g-D" stroke-dasharray="0 194.8" stroke-linecap="round"/></svg><div class="gauge-center"><div class="gauge-pct" id="gp-D" style="color:var(--amber)">--</div><div class="gauge-emoji">🤝</div></div></div>
+<div class="gauge-label" id="glabel-D">Debts</div><div class="gauge-left" id="gl-D">--</div></div>
+</div>
+
+<!-- Allocation Efficiency Card -->
+<div class="alloc-card">
+  <div class="card-title" style="margin-bottom:6px">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+    Budget Allocation Efficiency
+  </div>
+  <div class="alloc-bar-wrap">
+    <div class="alloc-bar-spent"   id="allocBarSpent"></div>
+    <div class="alloc-bar-unalloc" id="allocBarUnalloc"></div>
+  </div>
+  <div class="alloc-labels">
+    <span><span class="alloc-dot" id="allocDotSpent"></span><span id="allocLabelSpent">--% allocated</span></span>
+    <span><span class="alloc-dot" style="background:var(--amber)"></span><span id="allocLabelUnalloc">--% unallocated</span></span>
+  </div>
+  <div id="allocSuggestion"></div>
+  <div class="alloc-hist" id="allocHist" style="display:none">
+    <div class="alloc-hist-title">Monthly allocation history</div>
+    <div id="allocHistRows"></div>
+  </div>
 </div>
 
 <div class="panel-trigger">
@@ -524,19 +556,19 @@ All Expenses</div>
   <!-- Summary cards -->
   <div class="debt-summary">
     <div class="debt-sum-card">
-      <div class="debt-sum-label">🟢 Owed to You (IN)</div>
+      <div class="debt-sum-label">🟢 Owed to You</div>
       <div class="debt-sum-val" id="debtOwedMe" style="color:var(--green)">--</div>
-      <div class="debt-sum-count" id="debtOwedMeCount">IN debts</div>
+      <div class="debt-sum-count" id="debtOwedMeCount">OUT debts</div>
     </div>
     <div class="debt-sum-card">
-      <div class="debt-sum-label">🔴 You Owe (OUT)</div>
+      <div class="debt-sum-label">🔴 You Owe</div>
       <div class="debt-sum-val" id="debtIOwed" style="color:var(--red)">--</div>
-      <div class="debt-sum-count" id="debtIOwedCount">OUT debts</div>
+      <div class="debt-sum-count" id="debtIOwedCount">IN debts</div>
     </div>
     <div class="debt-sum-card">
       <div class="debt-sum-label">⚡ Net</div>
       <div class="debt-sum-val" id="debtNet" style="color:var(--cyan)">--</div>
-      <div class="debt-sum-count">IN minus OUT</div>
+      <div class="debt-sum-count">OUT minus IN</div>
     </div>
   </div>
 
@@ -550,16 +582,12 @@ All Expenses</div>
     <div class="debt-add-form" id="debtAddForm" style="display:none">
       <div class="form-label" style="margin-bottom:8px">Direction</div>
       <div class="dir-toggle" id="dirToggle">
-        <button class="dir-btn active-in" id="dirInBtn" onclick="setDebtDir('in')">💰 They Owe Me (IN)</button>
-        <button class="dir-btn"           id="dirOutBtn" onclick="setDebtDir('out')">💸 I Owe Them (OUT)</button>
+        <button class="dir-btn active-in" id="dirInBtn" onclick="setDebtDir('in')">&#128248; I Borrowed (I Owe)</button>
+        <button class="dir-btn"           id="dirOutBtn" onclick="setDebtDir('out')">&#128176; I Lent (They Owe Me)</button>
       </div>
       <div class="form-group">
         <label class="form-label">Person / Name *</label>
         <input type="text" class="form-input" id="dPerson" placeholder="e.g. John, Msuya, Jeezy...">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Date *</label>
-        <input type="date" class="form-input" id="dDate">
       </div>
       <div class="form-group">
         <label class="form-label">Amount (TZS) *</label>
@@ -581,8 +609,8 @@ All Expenses</div>
     <div class="debt-filter-row">
       <button class="chip active" data-df="all"    onclick="filterDebts(this)">All</button>
       <button class="chip"        data-df="unpaid" onclick="filterDebts(this)">⏳ Unpaid</button>
-      <button class="chip"        data-df="in"     onclick="filterDebts(this)" style="color:var(--green)">💰 They Owe Me</button>
-      <button class="chip"        data-df="out"    onclick="filterDebts(this)" style="color:var(--red)">💸 I Owe Them</button>
+      <button class="chip"        data-df="in"     onclick="filterDebts(this)" style="color:var(--red)">💸 I Borrowed</button>
+      <button class="chip"        data-df="out"    onclick="filterDebts(this)" style="color:var(--green)">💰 I Lent</button>
       <button class="chip"        data-df="paid"   onclick="filterDebts(this)">✓ Cleared</button>
     </div>
 
@@ -625,7 +653,7 @@ let notifSettings=JSON.parse(localStorage.getItem('bgt_notif')||JSON.stringify({
 // INIT
 window.addEventListener('load',()=>{
   const today=new Date().toISOString().split('T')[0];
-  ['eDate','iDate','dDate'].forEach(id=>document.getElementById(id).value=today);
+  ['eDate','iDate'].forEach(id=>document.getElementById(id).value=today);
   MONTHS.forEach((m,i)=>{['eMonth','iMonth','dMonth'].forEach(id=>{const o=document.createElement('option');o.value=m;o.textContent=MONTHS_FULL[i];document.getElementById(id).appendChild(o);});});
   document.getElementById('monthSelect').value=MONTHS[new Date().getMonth()];
   loadNotifSettings();scheduleNotifications();
@@ -652,38 +680,12 @@ function saveSettings(){
 // NOTIFICATIONS
 function loadNotifSettings(){['Morning','Afternoon','Evening'].forEach(n=>{const k=n.toLowerCase();document.getElementById('nt'+n).value=notifSettings[k].time;document.getElementById('tog'+n).classList.toggle('on',notifSettings[k].enabled);});}
 function toggleNotifTime(n){document.getElementById('tog'+n).classList.toggle('on');}
-async function requestNotifPermission(){if(!('Notification'in window)){toast('Notifications not supported on this browser','e');return;}const p=await Notification.requestPermission();if(p==='granted'){document.getElementById('notifBanner').classList.add('hidden');toast('✅ Notifications enabled! You\'ll be reminded 3x daily.','s');scheduleNotifications();}else if(p==='denied'){toast('❌ Permission denied — enable in phone Settings → Notifications','e');}else{toast('Notification permission dismissed','e');}}
+async function requestNotifPermission(){if(!('Notification'in window)){toast('Not supported','e');return;}const p=await Notification.requestPermission();if(p==='granted'){document.getElementById('notifBanner').classList.add('hidden');toast('Notifications enabled!','s');scheduleNotifications();}else toast('Permission denied','e');}
 function scheduleNotifications(){
-  // 1. Send settings to service worker — fires even when app is CLOSED
-  const sendToSW = (reg) => {
-    const target = navigator.serviceWorker.controller || (reg && reg.active);
-    if(target) target.postMessage({type:'SAVE_NOTIF_SETTINGS', settings: notifSettings});
-  };
-  if('serviceWorker' in navigator){
-    if(navigator.serviceWorker.controller) sendToSW();
-    else navigator.serviceWorker.ready.then(reg => sendToSW(reg));
-  }
-  // 2. In-app fallback — also fires while app is open
+  if(!('Notification'in window)||Notification.permission!=='granted')return;
+  const msgs={morning:{title:'Good morning, Meshack!',body:'Have you logged expenses yet?'},afternoon:{title:'Afternoon check-in',body:'Log expenses from this morning.'},evening:{title:'Evening wrap-up',body:'End of day - log expenses and check balance!'}};
   clearInterval(window._notifTimer);
-  if(!('Notification' in window) || Notification.permission !== 'granted') return;
-  window._notifTimer = setInterval(()=>{
-    const now=new Date(), hhmm=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
-    if(now.getSeconds() > 25) return;
-    ['morning','afternoon','evening'].forEach(slot=>{
-      const s=notifSettings[slot];
-      if(!s.enabled || s.time !== hhmm) return;
-      const lk='bgt_notif_last_'+slot, td=now.toISOString().split('T')[0];
-      if(localStorage.getItem(lk) === td) return;
-      localStorage.setItem(lk, td);
-      new Notification(
-        slot==='morning' ? '🌅 Good morning, Meshack!' : slot==='afternoon' ? '☀️ Afternoon check-in' : '🌙 Evening wrap-up',
-        { body: slot==='morning' ? "Time to log last night's expenses. Keep the streak going! 💪"
-               : slot==='afternoon' ? "Have you logged your morning expenses? A minute now saves confusion later."
-               : "End of day — log today's expenses and check your balance.",
-          icon: '/MeBudget/icons/icon-192x192.png', tag:'meshack_'+slot, vibrate:[200,100,200] }
-      );
-    });
-  }, 20000);
+  window._notifTimer=setInterval(()=>{const now=new Date(),hhmm=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');if(now.getSeconds()>5)return;['morning','afternoon','evening'].forEach(slot=>{const s=notifSettings[slot];if(!s.enabled||s.time!==hhmm)return;const lk='bgt_notif_last_'+slot,td=now.toISOString().split('T')[0];if(localStorage.getItem(lk)===td)return;localStorage.setItem(lk,td);new Notification(msgs[slot].title,{body:msgs[slot].body,tag:'meshack_'+slot});});},10000);
 }
 
 // NAV
@@ -718,41 +720,68 @@ function setHdr(pct,sub){document.getElementById('hdrPct').textContent=pct;docum
 
 // DASHBOARD
 function renderDashboard(d){
-  const spent  = Object.values(d.budgetData).reduce((s,v)=>s+(v.actual||0),0);
-  const inc    = d.totalIncome||1;
-  const debts  = d.debts||[];
-  const unpaidIN  = d.unpaidIN  || debts.filter(x=>x.direction==='in' &&!x.paid).reduce((s,x)=>s+x.amount,0);
-  const unpaidOUT = d.unpaidOUT || debts.filter(x=>x.direction==='out'&&!x.paid).reduce((s,x)=>s+x.amount,0);
-  // IN = they owe you → adds to balance. OUT = you owe them → reduces balance
-  // Use trueBalance read directly from J12 in the sheet — the authoritative figure
-  const adjBal  = (d.trueBalance !== undefined) ? d.trueBalance : (d.actualBalance + unpaidIN - unpaidOUT);
-  const usedPct= Math.round((spent/inc)*100);
-  const today  = new Date(),daysIn=new Date(today.getFullYear(),today.getMonth()+1,0).getDate(),dayNum=today.getDate();
-  const debtNote = debts.filter(x=>!x.paid).length ? ` · ${debts.filter(x=>!x.paid).length} pending debt(s)` : '';
-  setHdr(usedPct+'%',`${daysIn-dayNum} days left · ${d.expenses.length} tx${debtNote}`);
-  const mc=usedPct>100?'var(--red)':usedPct>80?'var(--amber)':'var(--cyan)';
+  const inc    = d.totalIncome || 1;
+  const debts  = d.debts || [];
+
+  // ── Read directly from sheet cells via budgetData (I=budgeted, J=actual) ──
+  // budgetData[code].budgeted = cell I7/I8/I9/I10, .actual = cell J7/J8/J9/J10
+  const spent = ['N','W','G','C'].reduce((s,c)=>s+(d.budgetData[c]?.actual||0),0);
+
+  // Balance directly from sheet: J12 = true balance incl. debts, J11 = debt net
+  const trueBalance = (d.trueBalance !== undefined) ? d.trueBalance : d.actualBalance;
+  const debtNet     = (d.debtNet     !== undefined) ? d.debtNet     : 0;
+  const unpaidIN    = d.unpaidIN  || debts.filter(x=>x.direction==='in' &&!x.paid).reduce((s,x)=>s+x.amount,0);
+  const unpaidOUT   = d.unpaidOUT || debts.filter(x=>x.direction==='out'&&!x.paid).reduce((s,x)=>s+x.amount,0);
+
+  const usedPct = inc>0 ? Math.round((spent/inc)*100) : 0;
+  const today   = new Date(), daysIn=new Date(today.getFullYear(),today.getMonth()+1,0).getDate(), dayNum=today.getDate();
+  const unpaidCount = debts.filter(x=>!x.paid).length;
+  const debtNote = unpaidCount ? ' · '+unpaidCount+' pending debt(s)' : '';
+  setHdr(usedPct+'%', (daysIn-dayNum)+' days left · '+d.expenses.length+' tx'+debtNote);
+
+  const mc = usedPct>100?'var(--red)':usedPct>80?'var(--amber)':'var(--cyan)';
   setGauge('mainGaugeFill','mainGaugePct',usedPct,mc,C_LG);
-  set('mgiTx',d.expenses.length.toString());
-  set('mgiSrc',d.incomeRows.length.toString());
-  set('mgiDay',dayNum+'/'+daysIn);
-  const se=document.getElementById('mgiStatus');
-  se.style.color=usedPct>100?'var(--red)':usedPct>80?'var(--amber)':'var(--green)';
-  se.textContent=usedPct>100?'OVERLOAD':usedPct>80?'WARNING':'NOMINAL';
+  set('mgiTx',  d.expenses.length.toString());
+  set('mgiSrc', d.incomeRows.length.toString());
+  set('mgiDay', dayNum+'/'+daysIn);
+  const se = document.getElementById('mgiStatus');
+  se.style.color   = usedPct>100?'var(--red)':usedPct>80?'var(--amber)':'var(--green)';
+  se.textContent   = usedPct>100?'OVERLOAD':usedPct>80?'WARNING':'NOMINAL';
+
+  // ── Category gauges: % used = J / I (actual/budgeted) read directly from cells ──
+  // Label shows allocated % of income = I / totalIncome * 100
   ['N','W','G','C'].forEach(code=>{
-    const v=d.budgetData[code],pct=v&&v.budgeted>0?Math.round((v.actual/v.budgeted)*100):0;
-    const over=v&&v.actual>v.budgeted,rem=(v&&v.budgeted||0)-(v&&v.actual||0);
-    const cv={N:'need',W:'want',G:'goal',C:'charity'}[code];
-    setGauge('g-'+code,'gp-'+code,pct,over?'var(--red)':'var(--'+cv+')',C_SM);
-    const le=document.getElementById('gl-'+code);
-    le.textContent=over?'⚠ '+fmt(Math.abs(rem))+' over':fmt(rem)+' left';
-    le.className='gauge-left'+(over?' gauge-over':'');
+    const v   = d.budgetData[code] || {budgeted:0, actual:0};
+    const usedPct = v.budgeted > 0 ? Math.round((v.actual / v.budgeted) * 100) : 0;  // % of budget used
+    const allocPct= inc > 0        ? Math.round((v.budgeted / inc) * 100)      : 0;  // % of income allocated
+    const over    = v.actual > v.budgeted;
+    const rem     = v.budgeted - v.actual;
+    const cv      = {N:'need',W:'want',G:'goal',C:'charity'}[code];
+    setGauge('g-'+code, 'gp-'+code, usedPct, over?'var(--red)':'var(--'+cv+')', C_SM);
+    // Update the gauge label to show name + live allocated %
+    const lbl = document.querySelector('#gauge-'+code+' .gauge-label') || document.getElementById('glabel-'+code);
+    if(lbl) lbl.textContent = {N:'Needs',W:'Wants',G:'Goals',C:'Charitable'}[code] + ' ('+allocPct+'%)';
+    const le = document.getElementById('gl-'+code);
+    if(le){ le.textContent = over?'⚠ '+fmt(Math.abs(rem))+' over':fmt(rem)+' left'; le.className='gauge-left'+(over?' gauge-over':''); }
   });
+
+  // ── Debt gauge: % of income tied up in pending debts ──
+  const debtTotalPending = unpaidIN + unpaidOUT;
+  const debtPct = inc > 0 ? Math.round((debtTotalPending / inc) * 100) : 0;
+  setGauge('g-D','gp-D', debtPct, debtPct>20?'var(--red)':'var(--amber)', C_SM);
+  const debtLbl = document.getElementById('glabel-D');
+  if(debtLbl) debtLbl.textContent = 'Debts ('+debtPct+'%)';
+  const debtLeft = document.getElementById('gl-D');
+  if(debtLeft) debtLeft.textContent = fmt(debtTotalPending)+' pending';
+
   renderRecentTx(d.expenses);
-  if(document.getElementById('tab-debts').classList.contains('active'))renderDebts();
-  window._dashData=d;
-  window._adjBal=adjBal;
-  window._unpaidIN=unpaidIN;
-  window._unpaidOUT=unpaidOUT;
+  renderAllocCard(d.totalIncome, spent, getMonth());
+  if(document.getElementById('tab-debts').classList.contains('active')) renderDebts();
+  window._dashData    = d;
+  window._trueBalance = trueBalance;
+  window._debtNet     = debtNet;
+  window._unpaidIN    = unpaidIN;
+  window._unpaidOUT   = unpaidOUT;
 }
 function setGauge(fillId,pctId,pct,color,circ){
   const c=Math.min(pct,100),d=(c/100)*circ;
@@ -766,24 +795,32 @@ function openPanel(){
   const d   = window._dashData||data;
   const inc = d.totalIncome;
   const spent = Object.values(d.budgetData).reduce((s,v)=>s+(v.actual||0),0);
-  const bal   = (d.balanceBeforeDebts !== undefined) ? d.balanceBeforeDebts : d.actualBalance;  // J12 - J11
-  const savePct = inc>0?Math.round((bal/inc)*100):0;
+  // Balances read directly from sheet cells (J12=trueBalance, J11=debtNet)
+  const trueBalance = (d.trueBalance !== undefined) ? d.trueBalance : d.actualBalance;
+  const debtNet     = (d.debtNet     !== undefined) ? d.debtNet     : 0;
+  const bal         = (d.balanceBeforeDebts !== undefined) ? d.balanceBeforeDebts : d.actualBalance;
+  const savePct     = inc>0 ? Math.round((bal/inc)*100) : 0;
   const cc={N:'#00c9ff',W:'#ffab40',G:'#00ff94',C:'#b39ddb'};
-  const cn={N:'Needs (40%)',W:'Wants (30%)',G:'Goals (12%)',C:'Charitable (18%)'};
+
+  // Category names with live % of income (from I column / totalIncome)
+  const cn={};
+  ['N','W','G','C'].forEach(code=>{
+    const v   = d.budgetData[code] || {budgeted:0};
+    const pct = inc>0 ? Math.round((v.budgeted/inc)*100) : 0;
+    cn[code]  = {N:'Needs',W:'Wants',G:'Goals',C:'Charitable'}[code]+' ('+pct+'% of income)';
+  });
 
   // Pull debt records from loaded data
   const debts  = d.debts || [];
-  // IN = they owe you → adds to balance (GREEN). OUT = you owe them → reduces balance (RED)
   const owedMe = debts.filter(x=>x.direction==='in' &&!x.paid).reduce((s,x)=>s+x.amount,0);
   const iOwe   = debts.filter(x=>x.direction==='out'&&!x.paid).reduce((s,x)=>s+x.amount,0);
-  // Use trueBalance from J12 if available; fallback to local calculation
-  const adjBal = (d.trueBalance !== undefined) ? d.trueBalance : (bal + owedMe - iOwe);
 
   const debtSection = `
     <div class="panel-sec">Debt Impact on Budget</div>
-    <div class="panel-row"><div class="pr-left"><div class="pr-label" style="color:var(--green)">IN — They Owe You</div><div class="pr-sub">Expected to receive · adds to your balance · ${debts.filter(x=>x.direction==='in'&&!x.paid).length} unpaid</div></div><div class="pr-right"><div class="pr-amount" style="color:var(--green)">+${fmt(owedMe)} TZS</div></div></div>
-    <div class="panel-row"><div class="pr-left"><div class="pr-label" style="color:var(--red)">OUT — You Owe</div><div class="pr-sub">Must repay · reduces your balance · ${debts.filter(x=>x.direction==='out'&&!x.paid).length} unpaid</div></div><div class="pr-right"><div class="pr-amount" style="color:var(--red)">-${fmt(iOwe)} TZS</div></div></div>
-    <div class="panel-row" style="background:rgba(0,201,255,.07)"><div class="pr-left"><div class="pr-label" style="color:var(--cyan)">True Balance (J12 — incl. debts)</div><div class="pr-sub">Read directly from sheet cell J12</div></div><div class="pr-right"><div class="pr-amount" style="color:${adjBal>=0?'var(--cyan)':'var(--red)'}">${adjBal>=0?'':'-'}${fmt(Math.abs(adjBal))} TZS</div></div></div>
+    <div class="panel-row"><div class="pr-left"><div class="pr-label" style="color:var(--green)">💰 IN — They Owe You</div><div class="pr-sub">Expected back · adds to balance · ${debts.filter(x=>x.direction==='in'&&!x.paid).length} unpaid</div></div><div class="pr-right"><div class="pr-amount" style="color:var(--green)">+${fmt(owedMe)} TZS</div></div></div>
+    <div class="panel-row"><div class="pr-left"><div class="pr-label" style="color:var(--red)">💸 OUT — You Owe</div><div class="pr-sub">Must repay · reduces balance · ${debts.filter(x=>x.direction==='out'&&!x.paid).length} unpaid</div></div><div class="pr-right"><div class="pr-amount" style="color:var(--red)">-${fmt(iOwe)} TZS</div></div></div>
+    <div class="panel-row"><div class="pr-left"><div class="pr-label" style="color:var(--amber)">⚡ Net Debt Impact (J11)</div><div class="pr-sub">Read directly from sheet cell J11</div></div><div class="pr-right"><div class="pr-amount" style="color:${debtNet>=0?'var(--green)':'var(--red)'}">${debtNet>=0?'+':''}${fmt(debtNet)} TZS</div></div></div>
+    <div class="panel-row" style="background:rgba(0,201,255,.07)"><div class="pr-left"><div class="pr-label" style="color:var(--cyan)">✅ True Balance (J12)</div><div class="pr-sub">Read directly from sheet cell J12 · includes all debts</div></div><div class="pr-right"><div class="pr-amount" style="color:${trueBalance>=0?'var(--cyan)':'var(--red)'}">${trueBalance>=0?'':'-'}${fmt(Math.abs(trueBalance))} TZS</div></div></div>
   `;
 
   const catR = Object.entries(d.budgetData).map(([code,v])=>{
@@ -795,13 +832,103 @@ function openPanel(){
     '<div class="panel-sec">Core Figures</div>' +
     '<div class="panel-row flash-in"><div class="pr-left"><div class="pr-label" style="color:var(--green)">Total Income</div><div class="pr-sub">'+d.incomeRows.length+' source'+(d.incomeRows.length!==1?'s':'')+'</div></div><div class="pr-right"><div class="pr-amount" style="color:var(--green)">'+fmt(inc)+' TZS</div></div></div>' +
     '<div class="panel-row"><div class="pr-left"><div class="pr-label" style="color:var(--red)">Total Spent</div><div class="pr-sub">'+d.expenses.length+' transactions</div></div><div class="pr-right"><div class="pr-amount" style="color:var(--red)">'+fmt(spent)+' TZS</div><div class="pr-pct">'+(inc>0?Math.round((spent/inc)*100):0)+'% of income</div></div></div>' +
-    '<div class="panel-row"><div class="pr-left"><div class="pr-label" style="color:'+(bal>=0?'var(--cyan)':'var(--red)')+'">Balance (before debts)</div><div class="pr-sub">Saved '+savePct+'%</div></div><div class="pr-right"><div class="pr-amount" style="color:'+(bal>=0?'var(--cyan)':'var(--red)')+'">'+fmt(bal)+' TZS</div></div></div>' +
+    '<div class="panel-row"><div class="pr-left"><div class="pr-label" style="color:'+(bal>=0?'var(--cyan)':'var(--red)')+'">Balance before debts (J12−J11)</div><div class="pr-sub">Saved '+savePct+'% of income</div></div><div class="pr-right"><div class="pr-amount" style="color:'+(bal>=0?'var(--cyan)':'var(--red)')+'">'+fmt(bal)+' TZS</div></div></div>' +
     '<div class="panel-sec">Category Breakdown</div>' + catR + debtSection;
 
   document.getElementById('panelOverlay').classList.add('open');
 }
 function closePanelOnBg(e){if(e.target===document.getElementById('panelOverlay'))closePanel();}
 function closePanel(){document.getElementById('panelOverlay').classList.remove('open');}
+
+// TRANSACTIONS
+// ── ALLOCATION EFFICIENCY ─────────────────────────────
+function renderAllocCard(income, spent, month) {
+  if (!income || income === 0) return;
+  const pct      = Math.min(Math.round((spent / income) * 100), 100);
+  const unalloc  = Math.max(income - spent, 0);
+  const unalPct  = 100 - pct;
+
+  // Color logic: 95-100% = green (efficient), 80-95% = amber, <80% = red
+  const color = pct >= 95 ? 'var(--goal)' : pct >= 80 ? 'var(--want)' : 'var(--red)';
+
+  // Bar
+  const spentEl   = document.getElementById('allocBarSpent');
+  const unallocEl = document.getElementById('allocBarUnalloc');
+  const dotEl     = document.getElementById('allocDotSpent');
+  if (spentEl) {
+    spentEl.style.width      = pct + '%';
+    spentEl.style.background = color;
+  }
+  if (unallocEl) {
+    unallocEl.style.width      = unalPct + '%';
+    unallocEl.style.background = unalloc > 0 ? 'rgba(255,171,64,.35)' : 'transparent';
+  }
+  if (dotEl) dotEl.style.background = color;
+
+  // Labels
+  const lSpent   = document.getElementById('allocLabelSpent');
+  const lUnalloc = document.getElementById('allocLabelUnalloc');
+  if (lSpent)   lSpent.textContent   = pct + '% allocated (' + fmt(spent) + ')';
+  if (lUnalloc) lUnalloc.textContent = unalPct + '% unallocated (' + fmt(unalloc) + ')';
+  lUnalloc.style.color = unalloc > 0 ? 'var(--want)' : 'var(--muted)';
+
+  // Suggestion box
+  const sugEl = document.getElementById('allocSuggestion');
+  if (sugEl) {
+    if (unalloc > 0) {
+      sugEl.innerHTML =
+        '<div class="alloc-suggestion alloc-sug-goal" onclick="switchToGoalSuggestion(' + unalloc + ')">' +
+        '🎯 Move ' + fmt(unalloc) + ' TZS to Goals — reach 100% efficiency' +
+        '</div>';
+    } else if (pct === 100) {
+      sugEl.innerHTML = '<div class="alloc-suggestion alloc-sug-full">✅ 100% allocated — maximum efficiency!</div>';
+    } else {
+      sugEl.innerHTML = '';
+    }
+  }
+
+  // Save to monthly history in localStorage
+  const histKey  = 'bgt_alloc_hist';
+  const hist     = JSON.parse(localStorage.getItem(histKey) || '{}');
+  hist[month]    = { income, spent, pct, unalloc };
+  localStorage.setItem(histKey, JSON.stringify(hist));
+
+  // Render history rows (last 6 months)
+  const histEl = document.getElementById('allocHist');
+  const rowsEl = document.getElementById('allocHistRows');
+  if (histEl && rowsEl) {
+    const allMonths = MONTHS.filter(m => hist[m]);
+    if (allMonths.length > 1) {
+      histEl.style.display = '';
+      rowsEl.innerHTML = allMonths.slice(-6).reverse().map(m => {
+        const h    = hist[m];
+        const hPct = Math.min(h.pct, 100);
+        const hCol = h.pct >= 95 ? 'var(--goal)' : h.pct >= 80 ? 'var(--want)' : 'var(--red)';
+        const unA  = h.unalloc > 0
+          ? ' <span style="color:var(--want);font-size:.62rem">+' + fmt(h.unalloc) + ' unalloc</span>'
+          : ' <span style="color:var(--goal);font-size:.62rem">✓ full</span>';
+        return '<div class="alloc-hist-row">' +
+          '<span class="alloc-hist-month">' + m + '</span>' +
+          '<div class="alloc-hist-bar"><div class="alloc-hist-fill" style="width:' + hPct + '%;background:' + hCol + '"></div></div>' +
+          '<span class="alloc-hist-pct" style="color:' + hCol + '">' + h.pct + '%</span>' +
+          unA +
+          '</div>';
+      }).join('');
+    } else {
+      histEl.style.display = 'none';
+    }
+  }
+}
+
+// Quick action: jump to Add Entry pre-selecting Goal category
+function switchToGoalSuggestion(amount) {
+  switchTab('add', document.querySelector('.nav-btn:nth-child(2)'));
+  setType('expense');
+  document.querySelectorAll('#frmExpense .cat-btn').forEach(b => b.classList.toggle('sel', b.dataset.cat === 'G'));
+  selCat = 'G';
+  setFmtVal('eAmount', amount);
+  toast('Allocating ' + fmt(amount) + ' to Goals 🎯', 'i');
+}
 
 function renderRecentTx(exps){if(!exps||!exps.length){document.getElementById('recentTx').innerHTML='<div class="empty"><div class="eico">&#10024;</div><p>No transactions yet</p></div>';return;}document.getElementById('recentTx').innerHTML=[...exps].reverse().slice(0,8).map(tx=>txHtml(tx,false)).join('');}
 function txHtml(tx,showActions=true){
@@ -935,7 +1062,7 @@ async function sendAiMessage(){
   input.value='';appendUserMsg(text);const lid=appendLoadingMsg();document.getElementById('aiSendBtn').disabled=true;
   try{
     let ctx='No financial data loaded.';
-    if(data){const spent=Object.values(data.budgetData).reduce((s,v)=>s+(v.actual||0),0),inc=data.totalIncome,today=new Date(),di=new Date(today.getFullYear(),today.getMonth()+1,0).getDate(),dn=today.getDate();ctx='Month: '+getMonth()+' (Day '+dn+' of '+di+', '+( di-dn)+' remaining)\nIncome: '+inc+' TZS\nSpent: '+spent+' TZS\nBalance (excl. debts, J12-J11): '+(data.balanceBeforeDebts||data.actualBalance)+' TZS\nTrue Balance (incl. debts): '+(data.trueBalance||data.actualBalance)+' TZS\nSavings: '+(inc>0?Math.round(((data.trueBalance||data.actualBalance)/inc)*100):0)+'%\nDaily rate: '+(dn>0?Math.round(spent/dn):0)+' TZS/day\nProjected: '+Math.round((spent/Math.max(dn,1))*di)+' TZS\n\nCategories:\n'+Object.entries(data.budgetData).map(([k,v])=>'  '+v.name+': '+v.actual+'/'+v.budgeted+' TZS ('+( v.budgeted>0?Math.round((v.actual/v.budgeted)*100):0)+'%)').join('\n')+'\n\nTop expenses:\n'+[...data.expenses].sort((a,b)=>b.amount-a.amount).slice(0,5).map(e=>'  '+e.source+' ('+( CAT[e.category]?.name||e.category)+'): '+e.amount+' TZS').join('\n');}
+    if(data){const spent=Object.values(data.budgetData).reduce((s,v)=>s+(v.actual||0),0),inc=data.totalIncome,today=new Date(),di=new Date(today.getFullYear(),today.getMonth()+1,0).getDate(),dn=today.getDate();ctx='Month: '+getMonth()+' (Day '+dn+' of '+di+', '+( di-dn)+' remaining)\nIncome: '+inc+' TZS\nSpent: '+spent+' TZS\nBalance: '+data.actualBalance+' TZS\nSavings: '+(inc>0?Math.round((data.actualBalance/inc)*100):0)+'%\nDaily rate: '+(dn>0?Math.round(spent/dn):0)+' TZS/day\nProjected: '+Math.round((spent/Math.max(dn,1))*di)+' TZS\n\nCategories:\n'+Object.entries(data.budgetData).map(([k,v])=>'  '+v.name+': '+v.actual+'/'+v.budgeted+' TZS ('+( v.budgeted>0?Math.round((v.actual/v.budgeted)*100):0)+'%)').join('\n')+'\n\nTop expenses:\n'+[...data.expenses].sort((a,b)=>b.amount-a.amount).slice(0,5).map(e=>'  '+e.source+' ('+( CAT[e.category]?.name||e.category)+'): '+e.amount+' TZS').join('\n');}
     const sys='You are Meshack budget advisor in Tanzania (TZS). Budget: 40% Needs, 30% Wants, 12% Goals, 18% Charitable.\n\nData:\n'+ctx+'\n\nBe friendly, direct, concise. Use **bold** for key figures. Format as K/M. Max 250 words.';
     const msgs=[{role:'system',content:sys},...aiChatHistory.slice(-8).map(m=>({role:m.role,content:m.content})),{role:'user',content:text}];
     const resp=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+GROQ_KEY},body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:msgs,temperature:0.4,max_tokens:600})});
@@ -964,20 +1091,14 @@ let debtFormOpen = false;
 function renderDebts() {
   const debts = (data && data.debts) ? data.debts : [];
 
-  // IN  = they owe you (money came IN, i.e. you lent it, it should come back IN) → GREEN → adds to balance
-  // OUT = you owe them (money went OUT from you, you borrowed it) → RED → reduces balance
-  const owedToYou = debts.filter(d => d.direction === 'in'  && !d.paid).reduce((s,d) => s+d.amount, 0);
-  const youOwe    = debts.filter(d => d.direction === 'out' && !d.paid).reduce((s,d) => s+d.amount, 0);
-  const net       = owedToYou - youOwe;  // positive = net owed to you
+  // IN  = you borrowed → you owe → reduces your budget → RED
+  // OUT = you lent     → they owe you → adds to your budget → GREEN
+  const youOwe    = debts.filter(d => d.direction === 'in'  && !d.paid).reduce((s,d) => s+d.amount, 0);
+  const owedToYou = debts.filter(d => d.direction === 'out' && !d.paid).reduce((s,d) => s+d.amount, 0);
+  const net       = owedToYou - youOwe;  // positive = you're net owed
 
-  set('debtOwedMe', fmt(owedToYou));  // GREEN card = IN debts (they owe you)
-  set('debtIOwed',  fmt(youOwe));     // RED card   = OUT debts (you owe)
-
-  // Update count labels
-  const inCount  = debts.filter(d => d.direction === 'in'  && !d.paid).length;
-  const outCount = debts.filter(d => d.direction === 'out' && !d.paid).length;
-  set('debtOwedMeCount', inCount  + (inCount  === 1 ? ' debt' : ' debts'));
-  set('debtIOwedCount',  outCount + (outCount === 1 ? ' debt' : ' debts'));
+  set('debtOwedMe', fmt(owedToYou));  // GREEN card = OUT debts (they owe you)
+  set('debtIOwed',  fmt(youOwe));     // RED card   = IN debts  (you owe)
 
   const netEl = document.getElementById('debtNet');
   if (netEl) {
@@ -1008,12 +1129,12 @@ function renderDebtList(debts) {
 
   list.innerHTML = filtered.map(d => {
     const isIn    = d.direction === 'in';
-    // IN  = they owe you (money should come IN to you) → GREEN
-    // OUT = you owe them (money went OUT from you)     → RED
+    // IN  = money came IN to you (you borrowed) → you owe it back → RED
+    // OUT = money went OUT from you (you lent)  → they owe you   → GREEN
     const dirLabel = isIn ? 'IN' : 'OUT';
-    const dirClass = isIn ? 'out' : 'in';          // CSS: .out=green (owed to you), .in=red (you owe)
-    const dirTip   = isIn ? '← they owe you' : '→ you owe them';
-    const amtColor = isIn ? 'var(--green)' : 'var(--red)';
+    const dirClass = isIn ? 'in' : 'out';          // CSS: .in=red, .out=green
+    const dirTip   = isIn ? '→ you owe (borrowed)' : '← they owe you (lent)';
+    const amtColor = isIn ? 'var(--red)' : 'var(--green)';
     const paidClass = d.paid ? 'paid-badge' : 'unpaid';
     const paidLabel = d.paid ? '✓ Cleared' : '⏳ Pending';
     const itemClass = d.paid ? 'debt-item paid' : 'debt-item';
@@ -1022,16 +1143,16 @@ function renderDebtList(debts) {
       <div class="debt-dir ${dirClass}">${dirLabel}</div>
       <div class="debt-info">
         <div class="debt-name ${d.paid ? 'paid-name' : ''}">${esc(d.person)}</div>
-        <div class="debt-meta">${d.date ? d.date + ' · ' : ''}${dirTip}${d.comment ? ' · ' + esc(d.comment) : ''}</div>
+        <div class="debt-meta">${dirTip}${d.comment ? ' · ' + esc(d.comment) : ''}</div>
       </div>
       <div class="debt-right">
-        <div class="debt-amount" style="color:${amtColor}">${isIn ? '+' : '-'}${fmt(d.amount)}</div>
+        <div class="debt-amount" style="color:${amtColor}">${isIn ? '-' : '+'}${fmt(d.amount)}</div>
         <span class="debt-status ${paidClass}">${paidLabel}</span>
         <div class="debt-actions">
           ${!d.paid
             ? `<button class="debt-btn pay-btn" onclick="toggleDebtPaid(${d.row},'${getMonth()}',true)">Clear</button>`
             : `<button class="debt-btn" onclick="toggleDebtPaid(${d.row},'${getMonth()}',false)">Undo</button>`}
-          <button class="debt-btn" onclick="openDebtEdit(${d.row},'${esc(d.person)}','${d.direction}',${d.amount},'${esc(d.comment||'')}','${getMonth()}','${d.date||''}')">✏️</button>
+          <button class="debt-btn" onclick="openDebtEdit(${d.row},'${esc(d.person)}','${d.direction}',${d.amount},'${esc(d.comment||'')}','${getMonth()}')">✏️</button>
           <button class="debt-btn" style="color:var(--red)" onclick="confirmDebtDelete(${d.row},'${esc(d.person)}','${getMonth()}')">🗑️</button>
         </div>
       </div>
@@ -1062,26 +1183,23 @@ function setDebtDir(dir) {
 // Submit new debt
 async function submitDebt() {
   const person  = document.getElementById('dPerson').value.trim();
-  const date    = document.getElementById('dDate').value;
   const amount  = getRaw('dAmount');
   const comment = document.getElementById('dComment').value.trim();
   const month   = document.getElementById('dMonth').value || getMonth();
 
   if (!person || !amount) { toast('Person and amount are required', 'e'); return; }
-  if (!date) { toast('Date is required', 'e'); return; }
   if (!API) { toast('Configure API URL first', 'e'); openSettings(); return; }
 
   const btn = document.getElementById('btnAddDebt');
   btn.disabled = true; btn.textContent = 'Saving…';
 
   try {
-    const p = new URLSearchParams({ action:'addDebt', person, date, direction:debtDir, amount, comment, month });
+    const p = new URLSearchParams({ action:'addDebt', person, direction:debtDir, amount, comment, month });
     const d = await (await fetch(`${API}?${p}`)).json();
     if (d.error) { toast('Error: ' + d.error, 'e'); }
     else {
       toast(`✓ Debt recorded in ${d.month}!`, 's');
       document.getElementById('dPerson').value  = '';
-      document.getElementById('dDate').value    = new Date().toISOString().split('T')[0];
       document.getElementById('dAmount').value  = '';
       document.getElementById('dAmount').dataset.raw = '';
       document.getElementById('dComment').value = '';
@@ -1095,29 +1213,41 @@ async function submitDebt() {
 // Mark paid / undo
 async function toggleDebtPaid(row, month, paid) {
   if (!API) { toast('Configure API first', 'e'); return; }
+
+  // Find existing debt data so we preserve person/direction/amount/comment
+  // Never delete — only change the paid status (col P in sheet)
+  const existing = data && data.debts ? data.debts.find(x => x.row === row) : null;
+  if (!existing) { toast('Debt record not found', 'e'); return; }
+
   try {
-    const d = await (await fetch(`${API}?` + new URLSearchParams({ action:'editDebt', row, month, paid: paid ? 'y' : 'n' }))).json();
+    const params = new URLSearchParams({
+      action:    'editDebt',
+      row,
+      month,
+      person:    existing.person,
+      direction: existing.direction,
+      amount:    existing.amount,
+      comment:   existing.comment || '',
+      paid:      paid ? 'y' : 'n'   // ONLY this field changes
+    });
+    const d = await (await fetch(`${API}?` + params)).json();
     if (d.error) { toast('Error: ' + d.error, 'e'); }
     else {
-      // Optimistic local update
-      if (data && data.debts) {
-        const debt = data.debts.find(x => x.row === row);
-        if (debt) debt.paid = paid;
-        localStorage.setItem('bgt_cache_' + month, JSON.stringify(data));
-      }
-      toast(paid ? '✓ Marked as paid!' : 'Marked as unpaid', 's');
+      // Optimistic local update — only update paid flag, keep everything else
+      existing.paid = paid;
+      localStorage.setItem('bgt_cache_' + month, JSON.stringify(data));
+      toast(paid ? '✅ Debt marked as cleared!' : '↩ Debt marked as unpaid', 's');
       renderDebts();
     }
   } catch(e) { toast('Network error', 'e'); }
 }
 
 // Edit debt — reuses the same inline form in a pre-filled state
-function openDebtEdit(row, person, direction, amount, comment, month, date) {
+function openDebtEdit(row, person, direction, amount, comment, month) {
   // Open form and pre-fill
   if (!debtFormOpen) toggleDebtForm();
   setDebtDir(direction);
   document.getElementById('dPerson').value   = person;
-  document.getElementById('dDate').value     = date || new Date().toISOString().split('T')[0];
   setFmtVal('dAmount', amount);
   document.getElementById('dComment').value  = comment;
   document.getElementById('dMonth').value    = month;
@@ -1127,15 +1257,13 @@ function openDebtEdit(row, person, direction, amount, comment, month, date) {
   btn.textContent = 'Update Debt';
   btn.onclick     = async function() {
     const newPerson  = document.getElementById('dPerson').value.trim();
-    const newDate    = document.getElementById('dDate').value;
     const newAmount  = getRaw('dAmount');
     const newComment = document.getElementById('dComment').value.trim();
     const newMonth   = document.getElementById('dMonth').value || getMonth();
     if (!newPerson || !newAmount) { toast('Person and amount required', 'e'); return; }
-    if (!newDate) { toast('Date is required', 'e'); return; }
     btn.disabled = true; btn.textContent = 'Saving…';
     try {
-      const p = new URLSearchParams({ action:'editDebt', row, person:newPerson, date:newDate, direction:debtDir, amount:newAmount, comment:newComment, month:newMonth, paid: 'n' });
+      const p = new URLSearchParams({ action:'editDebt', row, person:newPerson, direction:debtDir, amount:newAmount, comment:newComment, month:newMonth, paid: 'n' });
       const d = await (await fetch(`${API}?${p}`)).json();
       if (d.error) { toast('Error: '+d.error, 'e'); }
       else { toast('✓ Debt updated!', 's'); toggleDebtForm(); await loadData(); renderDebts(); }
@@ -1175,48 +1303,6 @@ function fmt(v){if(v===null||v===undefined)return '--';const n=parseFloat(v)||0;
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function set(id,v){const el=document.getElementById(id);if(el)el.textContent=v;}
 function toast(msg,type='i'){const t=document.getElementById('toast');t.textContent=msg;t.className='toast '+type+' show';setTimeout(()=>t.classList.remove('show'),3600);}
-
-// ── PWA Service Worker Registration ──
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js')
-      .then(reg => {
-        console.log('Meshack 1.0 SW registered:', reg.scope);
-        // Push notification settings to SW immediately after registration
-        reg.ready.then(() => {
-          const saved = localStorage.getItem('bgt_notif');
-          if(saved && reg.active){
-            reg.active.postMessage({type:'SAVE_NOTIF_SETTINGS', settings: JSON.parse(saved)});
-          }
-        });
-      })
-      .catch(err => console.warn('SW registration failed:', err));
-  });
-}
-
-// PWA install prompt
-let deferredPrompt;
-window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  deferredPrompt = e;
-  // Show install button if present
-  const btn = document.getElementById('installBtn');
-  if (btn) btn.style.display = 'flex';
-});
-window.addEventListener('appinstalled', () => {
-  deferredPrompt = null;
-  const btn = document.getElementById('installBtn');
-  if (btn) btn.style.display = 'none';
-  toast('Meshack 1.0 installed! ✅', 'i');
-});
-function installApp() {
-  if (deferredPrompt) {
-    deferredPrompt.prompt();
-    deferredPrompt.userChoice.then(c => {
-      deferredPrompt = null;
-    });
-  }
-}
 </script>
 </body>
 </html>
