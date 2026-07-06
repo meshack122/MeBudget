@@ -265,27 +265,9 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .gauge-fill{transition:stroke-dasharray .6s cubic-bezier(.4,0,.2,1),stroke .4s ease}
 .mgi-v,.gauge-pct,.main-gauge-pct,.hdr-pct{transition:color .3s ease}
 /* ── Allocation tracker ────────────────────────────── */
-.alloc-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:13px}
-.alloc-bar-wrap{height:12px;background:rgba(255,255,255,.06);border-radius:6px;overflow:hidden;display:flex;margin:10px 0 6px}
-.alloc-bar-spent{height:100%;border-radius:6px 0 0 6px;transition:width .7s ease}
-.alloc-bar-unalloc{height:100%;border-radius:0 6px 6px 0;transition:width .7s ease}
-.alloc-row{display:flex;align-items:center;justify-content:space-between;font-size:.76rem;margin-bottom:3px}
-.alloc-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px}
-.alloc-labels{display:flex;gap:14px}
-.alloc-suggestion{margin-top:9px;padding:9px 12px;border-radius:9px;font-size:.78rem;font-weight:600;border:1px dashed;display:flex;align-items:center;gap:8px;cursor:pointer;transition:all .2s}
-.alloc-sug-goal{border-color:rgba(0,255,148,.4);background:rgba(0,255,148,.06);color:var(--green)}
-.alloc-sug-goal:hover{background:rgba(0,255,148,.14)}
-.alloc-sug-full{border-color:rgba(0,201,255,.3);background:rgba(0,201,255,.05);color:var(--cyan)}
-.alloc-sug-over{border-color:rgba(255,69,96,.35);background:rgba(255,69,96,.07);color:var(--red)}
+
 /* Month allocation history */
-.alloc-hist{margin-top:10px;border-top:1px solid rgba(255,255,255,.06);padding-top:10px}
-.alloc-hist-title{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin-bottom:8px}
-.alloc-hist-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:.75rem}
-.alloc-hist-month{width:30px;font-weight:700;color:var(--muted);flex-shrink:0}
-.alloc-hist-bar{flex:1;height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden}
-.alloc-hist-fill{height:100%;border-radius:3px;transition:width .5s ease}
-.alloc-hist-pct{width:36px;text-align:right;font-weight:700;flex-shrink:0}
-.alloc-hist-amt{font-size:.68rem;color:var(--muted);flex-shrink:0;width:60px;text-align:right}
+
 @media(max-width:360px){.cat-grid{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
@@ -419,27 +401,6 @@ Meshack
 <div class="gauge-card" id="gauge-D" style="--g-color:var(--amber)">
 <div class="gauge-wrap"><svg viewBox="0 0 78 78"><circle cx="39" cy="39" r="31" class="gauge-track"/><circle cx="39" cy="39" r="31" class="gauge-fill" stroke="var(--amber)" id="g-D" stroke-dasharray="0 194.8" stroke-linecap="round"/></svg><div class="gauge-center"><div class="gauge-pct" id="gp-D" style="color:var(--amber)">--</div><div class="gauge-emoji">🤝</div></div></div>
 <div class="gauge-label" id="glabel-D">Debts</div><div class="gauge-left" id="gl-D">--</div></div>
-</div>
-
-<!-- Allocation Efficiency Card -->
-<div class="alloc-card">
-  <div class="card-title" style="margin-bottom:6px">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-    Budget Allocation Efficiency
-  </div>
-  <div class="alloc-bar-wrap">
-    <div class="alloc-bar-spent"   id="allocBarSpent"></div>
-    <div class="alloc-bar-unalloc" id="allocBarUnalloc"></div>
-  </div>
-  <div class="alloc-labels">
-    <span><span class="alloc-dot" id="allocDotSpent"></span><span id="allocLabelSpent">--% allocated</span></span>
-    <span><span class="alloc-dot" style="background:var(--amber)"></span><span id="allocLabelUnalloc">--% unallocated</span></span>
-  </div>
-  <div id="allocSuggestion"></div>
-  <div class="alloc-hist" id="allocHist" style="display:none">
-    <div class="alloc-hist-title">Monthly allocation history</div>
-    <div id="allocHistRows"></div>
-  </div>
 </div>
 
 <div class="panel-trigger">
@@ -775,7 +736,6 @@ function renderDashboard(d){
   if(debtLeft) debtLeft.textContent = fmt(debtTotalPending)+' pending';
 
   renderRecentTx(d.expenses);
-  renderAllocCard(d.totalIncome, spent, getMonth());
   if(document.getElementById('tab-debts').classList.contains('active')) renderDebts();
   window._dashData    = d;
   window._trueBalance = trueBalance;
@@ -841,94 +801,7 @@ function closePanelOnBg(e){if(e.target===document.getElementById('panelOverlay')
 function closePanel(){document.getElementById('panelOverlay').classList.remove('open');}
 
 // TRANSACTIONS
-// ── ALLOCATION EFFICIENCY ─────────────────────────────
-function renderAllocCard(income, spent, month) {
-  if (!income || income === 0) return;
-  const pct      = Math.min(Math.round((spent / income) * 100), 100);
-  const unalloc  = Math.max(income - spent, 0);
-  const unalPct  = 100 - pct;
 
-  // Color logic: 95-100% = green (efficient), 80-95% = amber, <80% = red
-  const color = pct >= 95 ? 'var(--goal)' : pct >= 80 ? 'var(--want)' : 'var(--red)';
-
-  // Bar
-  const spentEl   = document.getElementById('allocBarSpent');
-  const unallocEl = document.getElementById('allocBarUnalloc');
-  const dotEl     = document.getElementById('allocDotSpent');
-  if (spentEl) {
-    spentEl.style.width      = pct + '%';
-    spentEl.style.background = color;
-  }
-  if (unallocEl) {
-    unallocEl.style.width      = unalPct + '%';
-    unallocEl.style.background = unalloc > 0 ? 'rgba(255,171,64,.35)' : 'transparent';
-  }
-  if (dotEl) dotEl.style.background = color;
-
-  // Labels
-  const lSpent   = document.getElementById('allocLabelSpent');
-  const lUnalloc = document.getElementById('allocLabelUnalloc');
-  if (lSpent)   lSpent.textContent   = pct + '% allocated (' + fmt(spent) + ')';
-  if (lUnalloc) lUnalloc.textContent = unalPct + '% unallocated (' + fmt(unalloc) + ')';
-  lUnalloc.style.color = unalloc > 0 ? 'var(--want)' : 'var(--muted)';
-
-  // Suggestion box
-  const sugEl = document.getElementById('allocSuggestion');
-  if (sugEl) {
-    if (unalloc > 0) {
-      sugEl.innerHTML =
-        '<div class="alloc-suggestion alloc-sug-goal" onclick="switchToGoalSuggestion(' + unalloc + ')">' +
-        '🎯 Move ' + fmt(unalloc) + ' TZS to Goals — reach 100% efficiency' +
-        '</div>';
-    } else if (pct === 100) {
-      sugEl.innerHTML = '<div class="alloc-suggestion alloc-sug-full">✅ 100% allocated — maximum efficiency!</div>';
-    } else {
-      sugEl.innerHTML = '';
-    }
-  }
-
-  // Save to monthly history in localStorage
-  const histKey  = 'bgt_alloc_hist';
-  const hist     = JSON.parse(localStorage.getItem(histKey) || '{}');
-  hist[month]    = { income, spent, pct, unalloc };
-  localStorage.setItem(histKey, JSON.stringify(hist));
-
-  // Render history rows (last 6 months)
-  const histEl = document.getElementById('allocHist');
-  const rowsEl = document.getElementById('allocHistRows');
-  if (histEl && rowsEl) {
-    const allMonths = MONTHS.filter(m => hist[m]);
-    if (allMonths.length > 1) {
-      histEl.style.display = '';
-      rowsEl.innerHTML = allMonths.slice(-6).reverse().map(m => {
-        const h    = hist[m];
-        const hPct = Math.min(h.pct, 100);
-        const hCol = h.pct >= 95 ? 'var(--goal)' : h.pct >= 80 ? 'var(--want)' : 'var(--red)';
-        const unA  = h.unalloc > 0
-          ? ' <span style="color:var(--want);font-size:.62rem">+' + fmt(h.unalloc) + ' unalloc</span>'
-          : ' <span style="color:var(--goal);font-size:.62rem">✓ full</span>';
-        return '<div class="alloc-hist-row">' +
-          '<span class="alloc-hist-month">' + m + '</span>' +
-          '<div class="alloc-hist-bar"><div class="alloc-hist-fill" style="width:' + hPct + '%;background:' + hCol + '"></div></div>' +
-          '<span class="alloc-hist-pct" style="color:' + hCol + '">' + h.pct + '%</span>' +
-          unA +
-          '</div>';
-      }).join('');
-    } else {
-      histEl.style.display = 'none';
-    }
-  }
-}
-
-// Quick action: jump to Add Entry pre-selecting Goal category
-function switchToGoalSuggestion(amount) {
-  switchTab('add', document.querySelector('.nav-btn:nth-child(2)'));
-  setType('expense');
-  document.querySelectorAll('#frmExpense .cat-btn').forEach(b => b.classList.toggle('sel', b.dataset.cat === 'G'));
-  selCat = 'G';
-  setFmtVal('eAmount', amount);
-  toast('Allocating ' + fmt(amount) + ' to Goals 🎯', 'i');
-}
 
 function renderRecentTx(exps){if(!exps||!exps.length){document.getElementById('recentTx').innerHTML='<div class="empty"><div class="eico">&#10024;</div><p>No transactions yet</p></div>';return;}document.getElementById('recentTx').innerHTML=[...exps].reverse().slice(0,8).map(tx=>txHtml(tx,false)).join('');}
 function txHtml(tx,showActions=true){
