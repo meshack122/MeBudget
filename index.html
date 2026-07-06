@@ -543,8 +543,12 @@ All Expenses</div>
     <div class="debt-add-form" id="debtAddForm" style="display:none">
       <div class="form-label" style="margin-bottom:8px">Direction</div>
       <div class="dir-toggle" id="dirToggle">
-        <button class="dir-btn active-in" id="dirInBtn" onclick="setDebtDir('in')">&#128248; I Borrowed (I Owe)</button>
-        <button class="dir-btn"           id="dirOutBtn" onclick="setDebtDir('out')">&#128176; I Lent (They Owe Me)</button>
+        <button class="dir-btn active-in" id="dirInBtn" onclick="setDebtDir('in')">💰 They Owe Me (IN)</button>
+        <button class="dir-btn"           id="dirOutBtn" onclick="setDebtDir('out')">💸 I Owe Them (OUT)</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Date *</label>
+        <input type="date" class="form-input" id="dDate">
       </div>
       <div class="form-group">
         <label class="form-label">Person / Name *</label>
@@ -570,8 +574,8 @@ All Expenses</div>
     <div class="debt-filter-row">
       <button class="chip active" data-df="all"    onclick="filterDebts(this)">All</button>
       <button class="chip"        data-df="unpaid" onclick="filterDebts(this)">⏳ Unpaid</button>
-      <button class="chip"        data-df="in"     onclick="filterDebts(this)" style="color:var(--red)">💸 I Borrowed</button>
-      <button class="chip"        data-df="out"    onclick="filterDebts(this)" style="color:var(--green)">💰 I Lent</button>
+      <button class="chip"        data-df="in"     onclick="filterDebts(this)" style="color:var(--green)">💰 They Owe Me</button>
+      <button class="chip"        data-df="out"    onclick="filterDebts(this)" style="color:var(--red)">💸 I Owe Them</button>
       <button class="chip"        data-df="paid"   onclick="filterDebts(this)">✓ Cleared</button>
     </div>
 
@@ -1005,8 +1009,8 @@ function renderDebtList(debts) {
     // IN  = money came IN to you (you borrowed) → you owe it back → RED
     // OUT = money went OUT from you (you lent)  → they owe you   → GREEN
     const dirLabel = isIn ? 'IN' : 'OUT';
-    const dirClass = isIn ? 'in' : 'out';          // CSS: .in=red, .out=green
-    const dirTip   = isIn ? '→ you owe (borrowed)' : '← they owe you (lent)';
+    const dirClass = isIn ? 'out' : 'in';          // CSS: .out=green (IN=they owe you), .in=red (OUT=you owe)
+    const dirTip   = isIn ? '← they owe you' : '→ you owe them';
     const amtColor = isIn ? 'var(--red)' : 'var(--green)';
     const paidClass = d.paid ? 'paid-badge' : 'unpaid';
     const paidLabel = d.paid ? '✓ Cleared' : '⏳ Pending';
@@ -1016,7 +1020,7 @@ function renderDebtList(debts) {
       <div class="debt-dir ${dirClass}">${dirLabel}</div>
       <div class="debt-info">
         <div class="debt-name ${d.paid ? 'paid-name' : ''}">${esc(d.person)}</div>
-        <div class="debt-meta">${dirTip}${d.comment ? ' · ' + esc(d.comment) : ''}</div>
+        <div class="debt-meta">${d.date ? d.date + ' · ' : ''}${dirTip}${d.comment ? ' · ' + esc(d.comment) : ''}</div>
       </div>
       <div class="debt-right">
         <div class="debt-amount" style="color:${amtColor}">${isIn ? '-' : '+'}${fmt(d.amount)}</div>
@@ -1045,6 +1049,11 @@ function toggleDebtForm() {
   debtFormOpen = !debtFormOpen;
   document.getElementById('debtAddForm').style.display   = debtFormOpen ? '' : 'none';
   document.getElementById('debtAddToggle').textContent = debtFormOpen ? '✕ Cancel' : '+ Record a new debt';
+  // Pre-fill date with today when opening
+  if (debtFormOpen) {
+    const dEl = document.getElementById('dDate');
+    if (dEl && !dEl.value) dEl.value = new Date().toISOString().split('T')[0];
+  }
 }
 
 function setDebtDir(dir) {
@@ -1059,6 +1068,9 @@ async function submitDebt() {
   const amount  = getRaw('dAmount');
   const comment = document.getElementById('dComment').value.trim();
   const month   = document.getElementById('dMonth').value || getMonth();
+  // Date field — default to today if blank
+  const dateEl  = document.getElementById('dDate');
+  const date    = (dateEl && dateEl.value) ? dateEl.value : new Date().toISOString().split('T')[0];
 
   if (!person || !amount) { toast('Person and amount are required', 'e'); return; }
   if (!API) { toast('Configure API URL first', 'e'); openSettings(); return; }
@@ -1067,11 +1079,12 @@ async function submitDebt() {
   btn.disabled = true; btn.textContent = 'Saving…';
 
   try {
-    const p = new URLSearchParams({ action:'addDebt', person, direction:debtDir, amount, comment, month });
+    const p = new URLSearchParams({ action:'addDebt', person, direction:debtDir, amount, comment, month, date });
     const d = await (await fetch(`${API}?${p}`)).json();
     if (d.error) { toast('Error: ' + d.error, 'e'); }
     else {
       toast(`✓ Debt recorded in ${d.month}!`, 's');
+      document.getElementById('dDate').value    = '';
       document.getElementById('dPerson').value  = '';
       document.getElementById('dAmount').value  = '';
       document.getElementById('dAmount').dataset.raw = '';
