@@ -3,6 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00c9ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Meshack 1.0">
+<link rel="apple-touch-icon" href="icons/icon-192x192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192x192.png">
 <title>Meshack · Budget</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -284,7 +291,10 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 <p class="form-label" style="margin-top:6px">Groq AI <span style="font-weight:400;color:var(--green);font-size:.68rem">&#10003; Free worldwide</span></p>
 <div class="step"><b>1.</b> <b>console.groq.com</b> &#8594; Sign up &#8594; API Keys &#8594; Create. Key starts with <code>gsk_&#8230;</code></div>
 <div class="form-group" style="margin-top:8px"><label class="form-label">Groq API Key</label><input type="password" class="form-input" id="geminiKeyInput" placeholder="gsk_..."></div>
-<p class="form-label" style="margin-top:6px">Notification Times</p>
+<div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;margin-bottom:2px">
+  <p class="form-label" style="margin:0">Notification Times</p>
+  <button onclick="testNotification()" style="background:rgba(0,201,255,.12);border:1px solid rgba(0,201,255,.35);color:var(--cyan);border-radius:7px;padding:4px 11px;font-size:.72rem;font-weight:700;cursor:pointer;font-family:inherit">🔔 Test</button>
+</div>
 <div class="notif-times">
 <div class="notif-time-row"><label>&#127749; Morning</label><div style="display:flex;align-items:center;gap:8px"><input type="time" class="time-input" id="ntMorning" value="07:00"><button class="tog" id="togMorning" onclick="toggleNotifTime('Morning')"></button></div></div>
 <div class="notif-time-row"><label>&#9728;&#65039; Afternoon</label><div style="display:flex;align-items:center;gap:8px"><input type="time" class="time-input" id="ntAfternoon" value="13:00"><button class="tog" id="togAfternoon" onclick="toggleNotifTime('Afternoon')"></button></div></div>
@@ -645,12 +655,44 @@ function saveSettings(){
 // NOTIFICATIONS
 function loadNotifSettings(){['Morning','Afternoon','Evening'].forEach(n=>{const k=n.toLowerCase();document.getElementById('nt'+n).value=notifSettings[k].time;document.getElementById('tog'+n).classList.toggle('on',notifSettings[k].enabled);});}
 function toggleNotifTime(n){document.getElementById('tog'+n).classList.toggle('on');}
-async function requestNotifPermission(){if(!('Notification'in window)){toast('Not supported','e');return;}const p=await Notification.requestPermission();if(p==='granted'){document.getElementById('notifBanner').classList.add('hidden');toast('Notifications enabled!','s');scheduleNotifications();}else toast('Permission denied','e');}
+async function requestNotifPermission(){
+  if(!('Notification' in window)){toast('Notifications not supported','e');return;}
+  const p = await Notification.requestPermission();
+  if(p==='granted'){
+    document.getElementById('notifBanner').classList.add('hidden');
+    toast('✅ Notifications enabled — reminded 3× daily','s');
+    scheduleNotifications();
+  } else if(p==='denied'){
+    toast('❌ Blocked — allow in phone Settings → Notifications','e');
+  } else { toast('Permission dismissed','e'); }
+}
 function scheduleNotifications(){
-  if(!('Notification'in window)||Notification.permission!=='granted')return;
-  const msgs={morning:{title:'Good morning, Meshack!',body:'Have you logged expenses yet?'},afternoon:{title:'Afternoon check-in',body:'Log expenses from this morning.'},evening:{title:'Evening wrap-up',body:'End of day - log expenses and check balance!'}};
-  clearInterval(window._notifTimer);
-  window._notifTimer=setInterval(()=>{const now=new Date(),hhmm=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');if(now.getSeconds()>5)return;['morning','afternoon','evening'].forEach(slot=>{const s=notifSettings[slot];if(!s.enabled||s.time!==hhmm)return;const lk='bgt_notif_last_'+slot,td=now.toISOString().split('T')[0];if(localStorage.getItem(lk)===td)return;localStorage.setItem(lk,td);new Notification(msgs[slot].title,{body:msgs[slot].body,tag:'meshack_'+slot});});},10000);
+  // Delegate entirely to the Service Worker which uses IndexedDB for persistence
+  // SW fires notifications even when tab is backgrounded or phone is sleeping
+  const send = (reg) => {
+    const target = navigator.serviceWorker.controller || (reg && reg.active);
+    if(target) target.postMessage({type:'SAVE_NOTIF_SETTINGS', settings: notifSettings});
+  };
+  if('serviceWorker' in navigator){
+    if(navigator.serviceWorker.controller) send();
+    else navigator.serviceWorker.ready.then(reg => send(reg));
+  }
+  if(window._notifTimer){ clearInterval(window._notifTimer); window._notifTimer = null; }
+}
+
+// Fires a test notification instantly via the Service Worker
+function testNotification(){
+  if(!('Notification' in window)){ toast('Notifications not supported','e'); return; }
+  if(Notification.permission !== 'granted'){ toast('Enable notifications first','e'); return; }
+  navigator.serviceWorker.ready.then(reg => {
+    const target = navigator.serviceWorker.controller || reg.active;
+    if(target){
+      target.postMessage({type:'TEST_NOTIFICATION'});
+      toast('🔔 Test sent — check your notifications!','s');
+    } else {
+      toast('Service worker not ready — try again','e');
+    }
+  });
 }
 
 // NAV
@@ -1189,6 +1231,42 @@ function fmt(v){if(v===null||v===undefined)return '--';const n=parseFloat(v)||0;
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function set(id,v){const el=document.getElementById(id);if(el)el.textContent=v;}
 function toast(msg,type='i'){const t=document.getElementById('toast');t.textContent=msg;t.className='toast '+type+' show';setTimeout(()=>t.classList.remove('show'),3600);}
+
+// ── PWA Service Worker Registration ──────────────────────
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .then(reg => {
+        console.log('Meshack 1.0 SW registered:', reg.scope);
+        // Send saved notification settings so SW can schedule immediately
+        reg.ready.then(() => {
+          const saved = localStorage.getItem('bgt_notif');
+          if(saved){
+            const target = navigator.serviceWorker.controller || reg.active;
+            if(target) target.postMessage({type:'SAVE_NOTIF_SETTINGS', settings: JSON.parse(saved)});
+          }
+        });
+      })
+      .catch(err => console.warn('SW registration failed:', err));
+  });
+}
+
+// PWA install prompt
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); deferredPrompt = e;
+  const btn = document.getElementById('installBtn');
+  if(btn) btn.style.display = 'flex';
+});
+window.addEventListener('appinstalled', () => {
+  deferredPrompt = null;
+  const btn = document.getElementById('installBtn');
+  if(btn) btn.style.display = 'none';
+  toast('Meshack 1.0 installed! ✅', 'i');
+});
+function installApp(){
+  if(deferredPrompt){ deferredPrompt.prompt(); deferredPrompt.userChoice.then(() => { deferredPrompt = null; }); }
+}
 </script>
 </body>
 </html>
